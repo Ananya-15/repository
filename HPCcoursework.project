@@ -93,8 +93,10 @@
     </Configuration>
   </Settings>
   <VirtualDirectory Name="src">
+    <File Name="PrintMat.h"/>
+    <File Name="LidDrivenCavity.cpp"/>
+    <File Name="PoissonSolver.h"/>
     <File Name="LidDrivenCavitySolver.cpp"/>
     <File Name="LidDrivenCavity.h"/>
-    <File Name="LidDrivenCavity.cpp"/>
   </VirtualDirectory>
 </CodeLite_Project>
