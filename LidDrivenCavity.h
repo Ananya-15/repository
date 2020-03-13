@@ -15,9 +15,32 @@ public:
     void SetTimeStep(double deltat);
     void SetFinalTime(double finalt);
     void SetReynoldsNumber(double Re);
-
+    
+    //initialise and integrate perform solver calculations to determine streamfunction and vorticity values through time 
     void Initialise(string *val);
     void Integrate();
+    
+    //Functions which should belong to Poisson Solver class 
+     double* PoissonMatrix(int nx,int ny, int var, double dx, double dy); 
+     double* SolveMatrix(double* A, double* w1, double* s1, int var); 
+     //double* SolveMatrix(double* A, double* w1, double* s1,int var,int Nx,int Ny); 
+     
+    //Calculates boundary conditions for the lid cavity problem 
+    double* BoundaryConditions(int Nx, int Ny, double* v, double dx, double dy, double dt, double U); 
+    
+    //Calculates inner vorticty at current timestep 
+    double* InnerVorticity(double* v, double* s, int Nx, int Ny, double dx, double dy); 
+    
+    //Calculates inner voritcity at next timestep 
+    double* NextInnerVorticity(double* v, double* s, int Nx, int Ny, double dx, double dy, double dt, double Re); 
+    
+    //Obtains inner voriticyt values for calculation of streamfunction at th enext time step 
+    double* RecoverInnerVorticity(double*v, double*v1, int Nx, int Ny); 
+    
+    //Updates streamfunction values for the next time step 
+    double* UpdateInnerStream(double*s, double*s1, int Nx, int Ny); 
+    
+    
 
     // Add any other public functions
 
@@ -26,18 +49,20 @@ private:
     double* s = nullptr; //streamfunction 
     double *v1= nullptr; //Define inner vorticity and streamfunctions
     double *s1= nullptr; 
-
+    double* A=nullptr; 
+    
+    
     double dt;
     double T;
     double Lx;
     double Ly;
     double Re;
-
-    
-protected: //Allow protected access so that it can be accessed by Poisson solver class 
     
     int    Nx;
     int    Ny;
+    int nx; 
+    int ny; 
+    int var; 
     double Px; 
     double Py; 
 };

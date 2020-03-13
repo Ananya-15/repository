@@ -1,1 +1,4 @@
-Debug/LidDrivenCavitySolver.cpp.o: LidDrivenCavitySolver.cpp
+Debug/LidDrivenCavitySolver.cpp.o: LidDrivenCavitySolver.cpp \
+ LidDrivenCavity.h
+
+LidDrivenCavity.h:
