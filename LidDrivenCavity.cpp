@@ -1,6 +1,6 @@
 
 #include "LidDrivenCavity.h"
-#include "PoissonSolver.h"
+//#include "PoissonSolver.h"
 #include <iostream>
 #include <math.h>
 #include "PrintMat.h"
@@ -223,7 +223,7 @@ void LidDrivenCavity::Integrate()
         //Return Matrix A for poisson solver 
        //printmat((Nx-2)*(Ny-2),(Nx-2)*(Ny-2),A);
     double t=0; //First time step value  
-       while (t<T){
+     //  while (t<T){
             cout << "Time step is: " << t << endl << endl; 
             
              LidDrivenCavity::BoundaryConditions(Nx,Ny,v,dx,dy,dt,U); //Update with BCs //
@@ -263,10 +263,9 @@ void LidDrivenCavity::Integrate()
 //            cout << "Matrix A is: " << endl; 
 //            printmat(var,var,A); 
 //            cout << endl << endl; 
-            LidDrivenCavity* Poison = new PoissonSolver(); 
+           
             
-            Poison-> PoissonSolver.Initialise(Nx,Ny,dx,dy); 
-            
+//            Poison-> PoissonSolver.Initialise(Nx,Ny,dx,dy,);
             
             s1=LidDrivenCavity::SolveMatrix(A,v1,s1,var); 
               cout << "Works here 2" << endl; 
@@ -280,7 +279,7 @@ void LidDrivenCavity::Integrate()
           t+=dt; 
           
          // delete[] A; 
-      }
+      //}
     printmat(Nx,Ny,s); //Check if final values make sense 
 
      

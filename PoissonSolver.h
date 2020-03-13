@@ -1,8 +1,6 @@
 #include <iostream>
-//#include "PrintMat.h"
 #include <math.h>
 using namespace std;
-//#include "LidDrivenCavity.h"
 #include <cblas.h>
 
  #define F77NAME(x) x##_ //Definition for using lapack solver 
@@ -27,11 +25,13 @@ double* stream1=nullptr;
      PoissonSolver();  //Constructor and destructors defined 
     ~PoissonSolver();
     
-    void Poisson.Initialise(int Nx, int Ny, double dx, double dy){
+    void Initialise(int Nx, int Ny, double dx, double dy,double* v1, double* s1){
         Nx1=Nx; 
         Ny1=Ny; 
         dx1=dx; 
         dy1=dy; 
+        vort1=new double[(Nx1-2)*(Ny1-2)]; 
+        stream1= new double[(Nx1-2)*(Ny1-2)]; 
     }
     
 //    void PoissonInitialise(int ny,int nx,double deltax,double deltay){

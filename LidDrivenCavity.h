@@ -27,7 +27,7 @@ public:
      
     //Calculates boundary conditions for the lid cavity problem 
     void BoundaryConditions(int Nx, int Ny, double* v, double dx, double dy, double dt, double U); 
-    //int Nx, int Ny, double* v, double dx, double dy, double dt, double U
+
     //Calculates inner vorticty at current timestep 
     void InnerVorticity(double* v, double* s, int Nx, int Ny, double dx, double dy); 
     
@@ -40,9 +40,6 @@ public:
     //Updates streamfunction values for the next time step 
     void UpdateInnerStream(double*s, double*s1, int Nx, int Ny); 
     
-    
-
-    // Add any other public functions
 
 private:
     double* v = nullptr; //vorticity
@@ -50,6 +47,8 @@ private:
     double *v1= nullptr; //Define inner vorticity and streamfunctions
     double *s1= nullptr; 
     double* A=nullptr; 
+  //  PoissonSolver* Poison=nullptr; 
+    
     
     
     double dt;
@@ -63,9 +62,9 @@ private:
     
     int    Nx;
     int    Ny;
-    int nx; 
-    int ny; 
-    int var; 
+    int    nx; 
+    int    ny; 
+    int    var; 
     double Px; 
     double Py; 
 };
