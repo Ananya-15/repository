@@ -177,7 +177,7 @@ void LidDrivenCavity::Initialise(string* val) //Initialise all variables //Initi
       s=new double[Nx*Ny]; 
       v1=new double[(Nx-2)*(Ny-2)]; //Initialize inner vorticity and streamfunction values 
       s1=new double[(Nx-2)*(Ny-2)]; 
-      A=new double[(2*(Nx-2)+(Ny-2)+1)*(Nx-2)*(Ny-2)]; //Set default A values to be zero //5 because 2*Kl+Ku+1=5 
+      A=new double[(2*(Ny-2)+(Ny-2)+1)*(Nx-2)*(Ny-2)]; //Set default A values to be zero //5 because 2*Kl+Ku+1=5 
       
       for (int i=0;i<(Nx-2)*(Ny-2);i++){
           for (int j=0;j<(2*(Nx-2)+(Ny-2)+1);j++){

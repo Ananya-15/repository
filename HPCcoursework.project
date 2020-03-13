@@ -8,6 +8,7 @@
   <Description/>
   <Dependencies/>
   <VirtualDirectory Name="src">
+    <File Name="PrintMat.h"/>
     <File Name="test.cpp"/>
     <File Name="PoissonSolver.h"/>
     <File Name="LidDrivenCavitySolver.cpp"/>

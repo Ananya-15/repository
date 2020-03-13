@@ -26,19 +26,19 @@ public:
      //double* SolveMatrix(double* A, double* w1, double* s1,int var,int Nx,int Ny); 
      
     //Calculates boundary conditions for the lid cavity problem 
-    double* BoundaryConditions(int Nx, int Ny, double* v, double dx, double dy, double dt, double U); 
-    
+    void BoundaryConditions(int Nx, int Ny, double* v, double dx, double dy, double dt, double U); 
+    //int Nx, int Ny, double* v, double dx, double dy, double dt, double U
     //Calculates inner vorticty at current timestep 
-    double* InnerVorticity(double* v, double* s, int Nx, int Ny, double dx, double dy); 
+    void InnerVorticity(double* v, double* s, int Nx, int Ny, double dx, double dy); 
     
     //Calculates inner voritcity at next timestep 
-    double* NextInnerVorticity(double* v, double* s, int Nx, int Ny, double dx, double dy, double dt, double Re); 
+    void NextInnerVorticity(double* v, double* s, int Nx, int Ny, double dx, double dy, double dt, double Re); 
     
     //Obtains inner voriticyt values for calculation of streamfunction at th enext time step 
-    double* RecoverInnerVorticity(double*v, double*v1, int Nx, int Ny); 
+    void RecoverInnerVorticity(double*v, double*v1, int Nx, int Ny); 
     
     //Updates streamfunction values for the next time step 
-    double* UpdateInnerStream(double*s, double*s1, int Nx, int Ny); 
+    void UpdateInnerStream(double*s, double*s1, int Nx, int Ny); 
     
     
 
@@ -53,6 +53,9 @@ private:
     
     
     double dt;
+    double dx; 
+    double dy; 
+    double U; 
     double T;
     double Lx;
     double Ly;

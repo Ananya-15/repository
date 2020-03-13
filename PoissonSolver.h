@@ -17,13 +17,22 @@ class PoissonSolver //main class functions: Should create matrix A, should solve
 
 { //Inherited class which is dependent on class LidDrivenCavity 
 
-//private: 
-//int Nx,Ny; 
-//double dx,dy; 
+private: 
+int Nx1,Ny1; 
+double dx1,dy1; 
+double* vort1=nullptr; 
+double* stream1=nullptr; 
 
   public: 
      PoissonSolver();  //Constructor and destructors defined 
     ~PoissonSolver();
+    
+    void Poisson.Initialise(int Nx, int Ny, double dx, double dy){
+        Nx1=Nx; 
+        Ny1=Ny; 
+        dx1=dx; 
+        dy1=dy; 
+    }
     
 //    void PoissonInitialise(int ny,int nx,double deltax,double deltay){
 //        Nx=nx-2; 
@@ -31,7 +40,8 @@ class PoissonSolver //main class functions: Should create matrix A, should solve
 //        dx=deltax; 
 //        dy=deltay;
 //    }
-  public:
+public:
+
     double* MatrixPoisson(int Nx,int Ny, double dx, double dy){
              int nx=Nx-2; //Define own values here 
                 int ny=Ny-2; 
