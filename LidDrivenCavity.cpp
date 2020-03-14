@@ -1,6 +1,6 @@
 
 #include "LidDrivenCavity.h"
-//#include "PoissonSolver.h"
+#include "PoissonSolver.h"
 #include <iostream>
 #include <math.h>
 #include "PrintMat.h"
@@ -219,7 +219,10 @@ void LidDrivenCavity::UpdateInnerStream(double*s, double*s1, int Nx, int Ny){
 
 void LidDrivenCavity::Integrate()
 {    
-       
+      PoissonSolver* psolver=new PoissonSolver(); 
+      
+      
+      psolver->Initialise(Nx,Ny,dx,dy,v1,s1); 
         //Return Matrix A for poisson solver 
        //printmat((Nx-2)*(Ny-2),(Nx-2)*(Ny-2),A);
     double t=0; //First time step value  
@@ -253,11 +256,12 @@ void LidDrivenCavity::Integrate()
         
             //Call function from Poisson Solver class to obtain s1
             //PoissonSolver::PoissonInitialise(Ny,Nx,dx,dy);  //Can't do this for some reason, trouble understanding inherited classes 
+            A=psolver->MatrixPoisson(Nx,Ny,dx,dy); 
              
-                //printmat(var,var,A); 
+                printmat(var,var,A); 
                
                //Time to implement lapack 
-            A=LidDrivenCavity::PoissonMatrix(nx,ny,var,dx,dy);
+//A=LidDrivenCavity::PoissonMatrix(nx,ny,var,dx,dy);
                         cout << "Works here 1" << endl; 
             
 //            cout << "Matrix A is: " << endl; 

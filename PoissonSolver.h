@@ -22,8 +22,8 @@ double* vort1=nullptr;
 double* stream1=nullptr; 
 
   public: 
-     PoissonSolver();  //Constructor and destructors defined 
-    ~PoissonSolver();
+     PoissonSolver() = default;  //Constructor and destructors defined 
+    ~PoissonSolver() = default;
     
     void Initialise(int Nx, int Ny, double dx, double dy,double* v1, double* s1){
         Nx1=Nx; 
