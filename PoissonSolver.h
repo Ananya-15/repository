@@ -18,45 +18,36 @@ class PoissonSolver //main class functions: Should create matrix A, should solve
 private: 
 int Nx1,Ny1; 
 double dx1,dy1; 
-double* vort1=nullptr; 
-double* stream1=nullptr; 
+//double* vort1=nullptr; 
+//double* stream1=nullptr; 
 
   public: 
      PoissonSolver() = default;  //Constructor and destructors defined 
     ~PoissonSolver() = default;
     
-    void Initialise(int Nx, int Ny, double dx, double dy,double* v1, double* s1){
+    void Initialise(int Nx, int Ny, double dx, double dy){//double* v1, double* s1){
         Nx1=Nx; 
         Ny1=Ny; 
         dx1=dx; 
         dy1=dy; 
-        vort1=new double[(Nx1-2)*(Ny1-2)]; 
-        stream1= new double[(Nx1-2)*(Ny1-2)]; 
     }
     
-//    void PoissonInitialise(int ny,int nx,double deltax,double deltay){
-//        Nx=nx-2; 
-//        Ny=ny-2;
-//        dx=deltax; 
-//        dy=deltay;
-//    }
 public:
 
-    double* MatrixPoisson(int Nx,int Ny, double dx, double dy){
-             int nx=Nx-2; //Define own values here 
-                int ny=Ny-2; 
+    double* MatrixPoisson(){//int Nx,int Ny, double dx, double dy){
+             int nx=Nx1-2; //Define own values here 
+                int ny=Ny1-2; 
                 int var=nx*ny; //Temporary variable to obtain matrix A 
                 double* A=new double[var*var]; 
                 for (int i=0;i<var;i++){
-                   A[i*var+i]=(2/(dx*dx))+(2/(dy*dy)); //Diagonal 
+                   A[i*var+i]=(2/(dx1*dx1))+(2/(dy1*dy1)); //Diagonal 
                    if (i<var-1 && ((i+1)%ny)!=0){
-                       A[(i+1)*var+i]=-1/(dy*dy); 
+                       A[(i+1)*var+i]=-1/(dy1*dy1); 
                    }
                    if (i<var-(ny)){
-                       A[(i+ny)*var+i]=-1/(dx*dx); 
+                       A[(i+ny)*var+i]=-1/(dx1*dx1); 
                    }
                }
-        //printmat(var,var,A); 
         
         return A; 
     }

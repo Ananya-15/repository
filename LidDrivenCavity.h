@@ -21,9 +21,9 @@ public:
     void Integrate();
     
     //Functions which should belong to Poisson Solver class 
-     double* PoissonMatrix(int nx,int ny, int var, double dx, double dy); 
+    // double* PoissonMatrix(double dx, double dy); 
      double* SolveMatrix(double* A, double* w1, double* s1, int var); 
-     //double* SolveMatrix(double* A, double* w1, double* s1,int var,int Nx,int Ny); 
+//     double* SolveMatrix(double A, double* w1, double* s1,int var,int Nx,int Ny); 
      
     //Calculates boundary conditions for the lid cavity problem 
     void BoundaryConditions(int Nx, int Ny, double* v, double dx, double dy, double dt, double U); 
@@ -34,6 +34,8 @@ public:
     //Calculates inner voritcity at next timestep 
     void NextInnerVorticity(double* v, double* s, int Nx, int Ny, double dx, double dy, double dt, double Re); 
     
+    void CopyVorticity(double*arr1,double* arr2, int var); 
+    
     //Obtains inner voriticyt values for calculation of streamfunction at th enext time step 
     void RecoverInnerVorticity(double*v, double*v1, int Nx, int Ny); 
     
@@ -43,10 +45,12 @@ public:
 
 private:
     double* v = nullptr; //vorticity
+    double* vnew=nullptr; //Vorticity at new timestep 
     double* s = nullptr; //streamfunction 
     double *v1= nullptr; //Define inner vorticity and streamfunctions
     double *s1= nullptr; 
     double* A=nullptr; 
+    //double* A=nullptr; 
   //  PoissonSolver* Poison=nullptr; 
     
     
@@ -67,4 +71,6 @@ private:
     int    var; 
     double Px; 
     double Py; 
+    
+    
 };
