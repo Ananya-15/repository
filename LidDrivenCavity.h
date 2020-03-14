@@ -51,7 +51,7 @@ private:
     double *s1= nullptr; 
     double* A=nullptr; 
     //double* A=nullptr; 
-  //  PoissonSolver* Poison=nullptr; 
+
     
     
     

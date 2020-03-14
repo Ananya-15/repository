@@ -8,6 +8,9 @@
   <Description/>
   <Dependencies/>
   <VirtualDirectory Name="src">
+    <File Name="LidDrivenCavityExp.cpp"/>
+    <File Name="LidDrivenCavityExp.h"/>
+    <File Name="Paralleltry.cpp"/>
     <File Name="makefile"/>
     <File Name="PrintMat.h"/>
     <File Name="test.cpp"/>

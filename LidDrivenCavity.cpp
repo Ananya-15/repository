@@ -82,6 +82,7 @@ void LidDrivenCavity::Initialise(string* val) //Initialise all variables //Initi
        
        if (dt>=Re*dx*dy/4){
            cout << "Chosen value of dt too large" << endl; 
+//           break; 
        }
 
 }
