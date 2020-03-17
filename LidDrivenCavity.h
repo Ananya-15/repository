@@ -1,5 +1,4 @@
 //#pragma once
-//#include "PoissonSolver.h"
 #include <string>
 using namespace std;
 
@@ -21,9 +20,9 @@ public:
     void Integrate();
     
     //Functions which should belong to Poisson Solver class 
-    // double* PoissonMatrix(double dx, double dy); 
-     double* SolveMatrix(double* A, double* w1, double* s1, int var); 
-//     double* SolveMatrix(double A, double* w1, double* s1,int var,int Nx,int Ny); 
+     double* PoissonMatrix(double dx, double dy); 
+     //double* SolveMatrix(double* A, double* w1, double* s1, int var); 
+     double* SolveMatrix(double* A, double* w1, double* s1,int var,int Nx,int Ny); 
      
     //Calculates boundary conditions for the lid cavity problem 
     void BoundaryConditions(int Nx, int Ny, double* v, double dx, double dy, double dt, double U); 

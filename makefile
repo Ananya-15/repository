@@ -8,3 +8,6 @@ LidDrivenCavity.o: LidDrivenCavity.cpp LidDrivenCavity.h PrintMat.h PoissonSolve
 
 myprog: LidDrivenCavitySolver.o LidDrivenCavity.o 
 	g++ -o myprog LidDrivenCavitySolver.o LidDrivenCavity.o -llapack -lblas
+
+.PHONY: clean 
+	target

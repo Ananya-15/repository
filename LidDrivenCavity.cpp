@@ -81,8 +81,7 @@ void LidDrivenCavity::Initialise(string* val) //Initialise all variables //Initi
        
        
        if (dt>=Re*dx*dy/4){
-           cout << "Chosen value of dt too large" << endl; 
-//           break; 
+           throw logic_error("Number must be greater than -459.67 C!");
        }
 
 }
@@ -112,33 +111,33 @@ void LidDrivenCavity::Initialise(string* val) //Initialise all variables //Initi
 //     return A; 
 // }
  
- double* LidDrivenCavity::SolveMatrix(double* A, double* w1, double* s1,int var){ //Returns s1 
- 
- 
-           double wkopt; 
-           int lwork=-1; 
-           int info=0; 
-           int nrhs=var; 
-           int* ipiv=new int[var];
-           
-           //Will overwrite w1 //Copy and change it for now 
-           double* varmat=new double[var]; 
-           cblas_dcopy(var,v1,1,varmat,1); //Will change so that varmat=w1 
-           F77NAME(dsysv)('U',var,nrhs,A,var,ipiv,varmat,var,&wkopt,lwork,info); 
-           
-           lwork=(int)wkopt; 
-           
-           double* work = new double[lwork]; 
-           F77NAME(dsysv)('U',var,nrhs,A,var,ipiv,varmat,var,work,lwork,info); //Will produce psi values in varmat 
-           
-           //Copy varmat back to psi1 
-           cblas_dcopy(var,varmat,1,s1,1); 
-           
-           return s1; 
-           
-           delete[] varmat; 
-           delete [] v1; 
- }
+// double* LidDrivenCavity::SolveMatrix(double* A, double* w1, double* s1,int var){ //Returns s1 
+// 
+// 
+//           double wkopt; 
+//           int lwork=-1; 
+//           int info=0; 
+//           int nrhs=var; 
+//           int* ipiv=new int[var];
+//           
+//           //Will overwrite w1 //Copy and change it for now 
+//           double* varmat=new double[var]; 
+//           cblas_dcopy(var,v1,1,varmat,1); //Will change so that varmat=w1 
+//           F77NAME(dsysv)('U',var,nrhs,A,var,ipiv,varmat,var,&wkopt,lwork,info); 
+//           
+//           lwork=(int)wkopt; 
+//           
+//           double* work = new double[lwork]; 
+//           F77NAME(dsysv)('U',var,nrhs,A,var,ipiv,varmat,var,work,lwork,info); //Will produce psi values in varmat 
+//           
+//           //Copy varmat back to psi1 
+//           cblas_dcopy(var,varmat,1,s1,1); 
+//           
+//           return s1; 
+//           
+//           delete[] varmat; 
+//           delete [] v1; 
+// }
 
  void LidDrivenCavity::BoundaryConditions(int Nx, int Ny, double* v, double dx, double dy, double dt, double U){//){
       for (int i=0;i<Nx;i++){
@@ -239,7 +238,7 @@ void LidDrivenCavity::Integrate()
             
             A=psolver->MatrixPoisson(); //Call function to obtain matrix A
                
-            cout << "Works here 1" << endl;
+           
             
             cout << "Updated vorticity at new timestep: " << endl; 
             printmat(Ny,Nx,v); 

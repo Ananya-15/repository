@@ -12,14 +12,17 @@ public:
     LidDrivenCavityExp();
     ~LidDrivenCavityExp(); 
     void SetDomainSize(double xlen, double ylen);
-    void SetGridSize(int nx, int ny);
+    void SetGridSize(int tempx, int tempy);
     void SetTimeStep(double deltat);
     void SetFinalTime(double finalt);
     void SetReynoldsNumber(double Re);
+    void SetPartitions(int px, int py); 
+    void SetGlobalDomainSize(int nx, int ny);
     
     //initialise and integrate perform solver calculations to determine streamfunction and vorticity values through time 
+    void AssignGlobal(string* val);
     void Initialise(int rank);
-    void Integrate();
+    void Integrate(int rank);
     
     //Functions which should belong to Poisson Solver class 
     // double* PoissonMatrix(double dx, double dy); 
@@ -27,7 +30,7 @@ public:
 //     double* SolveMatrix(double A, double* w1, double* s1,int var,int Nx,int Ny); 
      
     //Calculates boundary conditions for the lid cavity problem 
-    void BoundaryConditions(int Nx, int Ny, double* v, double dx, double dy, double dt, double U); 
+    void BoundaryConditions(int rank, int Nx, int Ny, double* v, double dx, double dy, double dt, double U); 
 
     //Calculates inner vorticty at current timestep 
     void InnerVorticity(double* v, double* s, int Nx, int Ny, double dx, double dy); 
@@ -51,10 +54,8 @@ private:
     double *v1= nullptr; //Define inner vorticity and streamfunctions
     double *s1= nullptr; 
     double* A=nullptr; 
-    //double* A=nullptr; 
 
-    
-    
+    // Global variable definition //Some values may be redundant 
     
     double dt;
     double dx; 
@@ -64,10 +65,20 @@ private:
     double Lx;
     double Ly;
     double Re;
-    
-    int    Nxloc;
-    int    Nyloc;
+    int    Nx;
+    int    Ny;
     int    nx; 
     int    ny; 
     int    var; 
+    int Px; 
+    int Py; 
+    
+    int Nxloc; 
+    int Nyloc; 
+    double Lxloc; 
+    double Lyloc; 
+    int nxloc; 
+    int nyloc; 
+    //Local variable definition 
+    
 };

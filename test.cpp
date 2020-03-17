@@ -32,13 +32,13 @@ LidDrivenCavity::~LidDrivenCavity() //Destructor
            //Create matrix A //get ad array length error for some reason :( 
         int Ku=ny; //Comes from problem definition 
         int Kl=ny; 
-        int rows=Ku+Kl+Kl+1;
+        int rows=3*Kl+1;
         var=nx*ny; 
         int mid=(Ku+Kl+1)/2+Kl; //Position of mid diagonal 
         
         for (int i=0;i<var;i++){
             for (int j=0;j<rows;j++){
-                A[i*var+j]=0; 
+                A[i*rows+j]=0; //Initialise and set everything as zero 
             }
         }
         
@@ -64,9 +64,9 @@ LidDrivenCavity::~LidDrivenCavity() //Destructor
          cout << endl << endl; 
          int info=0; 
          int* ipiv=new int[var];
-         cout << "After factorisation: " << endl; 
+         //cout << "After factorisation: " << endl; 
          F77NAME(dgbtrf)(var,var,Ku,Kl,A,rows,ipiv,info); 
-         printmat(rows,var,A); 
+        // printmat(rows,var,A); 
      return A; 
  }
  
@@ -75,8 +75,8 @@ LidDrivenCavity::~LidDrivenCavity() //Destructor
          int info=0; 
          int* ipiv=new int[var];
            
-           int nrhs=var; 
-           int ldab=2*ny+ny+1; 
+           int nrhs=1; 
+           int ldab=3*ny+1; 
            
            double* varmat=new double[var]; 
            cblas_dcopy(var,v1,1,varmat,1);
@@ -104,26 +104,18 @@ LidDrivenCavity::~LidDrivenCavity() //Destructor
        Px=stoi(val[4]); 
        Py=stoi(val[5]);
        dt=stod(val[6]);
-       T=stoi(val[7]);  
+       T=stod(val[7]);  
        Re=stod(val[8]); 
 
       v=new double[Nx*Ny]; //Initialize vorticity values 
       vnew=new double[Nx*Ny];
       s=new double[Nx*Ny]; 
-      v1=new double[(Nx-2)*(Ny-2)]; //Initialize inner vorticity and streamfunction values 
       nx=Nx-2; 
       ny=Ny-2; 
       var=nx*ny; //
+      v1=new double[var]; //Initialize inner vorticity and streamfunction values 
       s1=new double[var]; 
       A=new double[(3*ny+1)*(var)]; 
-      
-      
-//      
-//      for (int i=0;i<var;i++){
-//          for (int j=0;j<rows;j++){
-//              A[i*var+j]=0; 
-//          }
-//      }
       
       
         dx=Lx/(Nx-1.0); 
@@ -132,7 +124,7 @@ LidDrivenCavity::~LidDrivenCavity() //Destructor
        
        
        if (dt>=Re*dx*dy/4){
-           cout << "Chosen value of dt too large" << endl; 
+          throw logic_error("Chosen timestep value too small");
        }
 
 }
@@ -142,7 +134,7 @@ LidDrivenCavity::~LidDrivenCavity() //Destructor
  void LidDrivenCavity::BoundaryConditions(int Nx, int Ny, double* v, double dx, double dy, double dt, double U){//){
       for (int i=0;i<Nx;i++){
                 v[(i+1)*(Ny-1)+i]=(2/pow(dy,2))*(s[(i+1)*(Ny-1)]-s[(i+1)*(Ny-1)-1])-(2*U/dy); //Top
-                 v[i*Ny]=(2/pow(dy,2))*(s[i*Ny+1]-s[i*Ny+2]); //Bottom 
+                 v[i*Ny]=(2/pow(dy,2))*(s[i*Ny]-s[i*Ny+1]); //Bottom 
             }
        for (int i=0;i<Ny;i++){
         v[i]=(2/(pow(dx,2)))*(s[i]-s[i+Ny]); //left 
@@ -153,7 +145,7 @@ LidDrivenCavity::~LidDrivenCavity() //Destructor
 void LidDrivenCavity::InnerVorticity(double* v, double* s, int Nx, int Ny, double dx, double dy){
       for (int i=1;i<Nx-1;i++){
                 for (int j=1;j<Ny-1;j++){
-                    v[i*Ny+j]=-(s[(i*Ny)+j-1]-2*s[i*Ny+j]+s[(i*Ny)+j+1])/(pow(dy,2))-(s[(i-1)*Ny+j]-2*s[i*Ny+j]+s[(i+1)*Ny+j])/(pow(dx,2)); 
+                    v[i*Ny+j]=-((s[(i*Ny)+j-1]-2*s[i*Ny+j]+s[(i*Ny)+j+1])/pow(dy,2))-((s[(i-1)*Ny+j]-2*s[i*Ny+j]+s[(i+1)*Ny+j])/pow(dx,2)); 
                 }
       }
  }
@@ -161,10 +153,10 @@ void LidDrivenCavity::InnerVorticity(double* v, double* s, int Nx, int Ny, doubl
  void LidDrivenCavity::NextInnerVorticity(double* v, double* s, int Nx, int Ny, double dx, double dy, double dt, double Re){
         for (int i=1;i<Nx-1;i++){
             for (int j=1;j<Ny-1;j++){ //Create temporary variables to ensure ease of reading 
-                double temp1=(s[(i)*Ny+j+1]-s[i*Ny+j-1])*(v[(i+1)*Ny+j]-v[(i-1)*Ny+j])/(4*dy*dx); 
+                double temp1=(s[i*Ny+j+1]-s[i*Ny+j-1])*(v[(i+1)*Ny+j]-v[(i-1)*Ny+j])/(4*dy*dx); 
                 double temp2=(s[(i+1)*Ny+j]-s[(i-1)*Ny+j])*(v[i*Ny+j+1]-v[i*Ny+j-1])/(4*dy*dx); 
-                double temp3=(1/Re)*((v[(i*Ny)+j-1]-2*v[i*Ny+j]+v[(i*Ny)+j+1])/(pow(dy,2))+(v[(i-1)*Ny+j]-2*v[i*Ny+j]+v[(i+1)*Ny+j])/(pow(dx,2))); 
-                v[i*Ny+j]=v[i*Ny+j]+dt*(temp2-temp1+temp3); 
+                double temp3=(1/Re)*(((v[(i*Ny)+j-1]-2*v[i*Ny+j]+v[(i*Ny)+j+1])/pow(dy,2))+((v[(i-1)*Ny+j]-2*v[i*Ny+j]+v[(i+1)*Ny+j])/pow(dx,2))); 
+                vnew[i*Ny+j]=v[i*Ny+j]+(dt*(temp2-temp1+temp3)); 
                 
             }
         }
@@ -226,26 +218,29 @@ void LidDrivenCavity::Integrate()
             printmat(Ny,Nx,v); 
             cout << endl << endl; 
             
-            LidDrivenCavity::RecoverInnerVorticity(v,v1,Nx,Ny); //Extract to obain inner voriticity values and save in matrix v1 
-            
             LidDrivenCavity::CopyVorticity(vnew,v,Nx*Ny); 
             
+            LidDrivenCavity::RecoverInnerVorticity(v,v1,Nx,Ny); //Extract to obain inner voriticity values and save in matrix v1 
             
                
-            cout << "Works here 1" << endl;
+           // cout << "Works here 1" << endl;
             
              s1=LidDrivenCavity::SolveMatrix(A,v1,s1,var,Nx,Ny);  //Time to implement lapack 
             
             //s1=LidDrivenCavity::SolveMatrix(A,v1,s1,var); 
-              cout << "Works here 2" << endl; 
+             // cout << "Works here 2" << endl; 
                
             LidDrivenCavity::UpdateInnerStream(s,s1,Nx,Ny);  //Need to input s1 back in streamfunction 
 
-              cout << "Works here 3" << endl; 
+             // cout << "Works here 3" << endl; 
+             
+             cout << "Stream function values at next timestep: " << endl ; 
+             printmat(Ny,Nx,s); 
+             cout << endl << endl; 
           t+=dt; 
       }
-    cout << "Final streamfunction values: " << endl; 
-    printmat(Nx,Ny,s); //Check if final values make sense 
+    //cout << "Final streamfunction values: " << endl; 
+    printmat(Ny,Nx,s); //Check if final values make sense 
 
   delete [] A; 
   delete [] v1; 

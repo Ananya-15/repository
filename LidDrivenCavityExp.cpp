@@ -19,17 +19,27 @@ LidDrivenCavityExp::LidDrivenCavityExp()=default; //Constructor
 
 LidDrivenCavityExp::~LidDrivenCavityExp()=default;  //Destructor 
 
+void LidDrivenCavityExp::SetGlobalDomainSize(int nx, int ny)
+{
+   Nx=nx; 
+   Ny=ny; 
+}
 
 void LidDrivenCavityExp::SetDomainSize(double xlen, double ylen)
 {
-   Lx=xlen; 
-   Ly=ylen; 
+   Lxloc=xlen; 
+   Lyloc=ylen; 
 }
 
-void LidDrivenCavityExp::SetGridSize(int ny, int nx) //Solution created assuming Ny rows and Nx columns 
+void LidDrivenCavityExp::SetPartitions(int px,int py){
+    Px=px; 
+    Py=py;
+}
+
+void LidDrivenCavityExp::SetGridSize(int tempy, int tempx) //Solution created assuming Ny rows and Nx columns 
 {
-    Nx=nx; 
-    Ny=ny; 
+    Nxloc=tempx; 
+    Nyloc=tempy; 
 }
 
 void LidDrivenCavityExp::SetTimeStep(double deltat)
@@ -47,28 +57,114 @@ void LidDrivenCavityExp::SetReynoldsNumber(double re)
     Re=re;
 }
 
+void LidDrivenCavityExp::AssignGlobal(string *val){
+
+              Lx=stod(val[0]); 
+              Ly=stod(val[1]); 
+              Nx=stoi(val[2]); 
+              Ny=stoi(val[3]); 
+              Px=stoi(val[4]); 
+              Py=stoi(val[5]);
+              dt=stod(val[6]);
+              T=stod(val[7]); 
+              Re=stod(val[8]);
+}
+
 void LidDrivenCavityExp::Initialise(int rank) //Use initialise to initialise all pointer values 
-{   
-      nx=Nx-2; 
-      ny=Ny-2; 
-      var=nx*ny; //
-      v=new double[Nx*Ny]; //Initialize vorticity values 
-      vnew=new double[Nx*Ny];//Voriticity at new timestep value 
-      s=new double[Nx*Ny]; //Initialize streamfunction value 
+{    
+      nxloc=Nxloc-2; 
+      nyloc=Nyloc-2; 
+      var=nxloc*nyloc; //
+      v=new double[Nxloc*Nyloc]; //Initialize vorticity values 
+      vnew=new double[Nxloc*Nyloc];//Voriticity at new timestep value 
+      s=new double[Nxloc*Nyloc]; //Initialize streamfunction value 
       v1=new double[var]; //Initialize inner vorticity and streamfunction values 
       s1=new double[var]; 
       
-      for (int i=0;i<Nx;i++){
-          for (int j=0;j<Ny;j++){
-              v[i*Nx+j]=i*Nx+j; 
+      for (int i=0;i<Nxloc;i++){
+          for (int j=0;j<Nyloc;j++){
+              v[i*Nyloc+j]=1; 
           }
       }
       
-      cout << "Initialised voriticity for rank " << rank << " is: " << endl << endl; 
-      //printmat(Ny,Nx,v); 
-      cout << endl << endl; 
+      for (int i=0;i<Nxloc*Nyloc;i++){
+          s[i]=0; 
+      }
+      
+//      cout << "Initialised voriticity for rank " << rank << " is: " << endl << endl; 
+//      printmat(Nyloc,Nxloc,v); 
+//      cout << endl << endl; 
+      
+        dx=Lx/(Nx-1.0); //Determine other global variables used across several class member functions 
+        dy=Lx/(Ny-1.0); 
+        U=1.0;
       
 }
+
+ void LidDrivenCavityExp::BoundaryConditions(int rank,int Nxloc, int Nyloc, double* v, double dx, double dy, double dt, double U){//){
+      
+      if (rank % Py==0) {
+         if (Nyloc==1){ //Communication necessary
+            
+
+          
+          
+            
+        }
+         else {
+              for (int i=0;i<Nxloc;i++){
+                         v[i*Nyloc]=(2.0/pow(dy,2))*(s[i*Nyloc]-s[i*Nyloc+1]); //Bottom 
+                         cout << "Value is: " << Ly << endl; 
+                         
+                    }
+                    
+              }
+         }
+
+       if (rank % (Py-1)==0) {
+         if (Nyloc==1){ //Communication necessary
+          
+        }
+         else {
+              for (int i=0;i<Nxloc;i++){
+                        v[(i+1)*(Nyloc-1)+i]=(2/pow(dy,2))*(s[(i+1)*(Nyloc-1)]-s[(i+1)*(Nyloc-1)-1])-(2*U/dy); //Top
+                    }
+                    
+              }
+         }
+//         
+//         
+         if  (rank<Py){
+             if (Nxloc==1){ //Communication necessary, call communicator class function
+          
+                }
+              else {
+               for (int i=0;i<Nyloc;i++){
+                v[i]=(2/(pow(dx,2)))*(s[i]-s[i+Nyloc]); //left 
+                }
+              }
+         }
+//         
+         if  (rank<(Px*Py) && rank>=(Px-1)*Py){
+             if (Nxloc==1){ //Communication necessary, call communicator class function
+          
+                }
+              else {
+               for (int i=0;i<Nyloc;i++){
+                v[Nyloc*(Nxloc-1)+i]=(2/pow(dx,2))*(s[(Nxloc-1)*Nyloc+i]-s[(Nxloc-2)*Nyloc+i]); //Right 
+                }
+              }
+         }
+    if (rank==3){
+    cout << "Rank is: " << rank << endl; 
+    printmat(Nyloc,Nxloc,v);    
+//    cout << "Streamfunctio: " <<endl; 
+//    printmat(Nyloc,Nxloc,s);  
+    }
+ }
+    
+       
+      
 //      
 //      A=new double[var*var]; 
 //      
@@ -77,10 +173,7 @@ void LidDrivenCavityExp::Initialise(int rank) //Use initialise to initialise all
 //              A[i*var+j]=0; 
 //          }
 //      }
-//        dx=Lx/(Nx-1.0); 
-//        dy=Lx/(Ny-1.0);
-//        U=1.0; 
-
+//        
 
 
 //void LidDrivenCavityExp::Initialise(string* val) //Initialise all variables //Initialise all arrays required for the operation
@@ -176,16 +269,7 @@ void LidDrivenCavityExp::Initialise(int rank) //Use initialise to initialise all
 //           delete [] v1; 
 // }
 
-// void LidDrivenCavity::BoundaryConditions(int Nx, int Ny, double* v, double dx, double dy, double dt, double U){//){
-//      for (int i=0;i<Nx;i++){
-//                v[(i+1)*(Ny-1)+i]=(2/pow(dy,2))*(s[(i+1)*(Ny-1)]-s[(i+1)*(Ny-1)-1])-(2*U/dy); //Top
-//                 v[i*Ny]=(2/pow(dy,2))*(s[i*Ny+1]-s[i*Ny+2]); //Bottom 
-//            }
-//       for (int i=0;i<Ny;i++){
-//        v[i]=(2/(pow(dx,2)))*(s[i]-s[i+Ny]); //left 
-//        v[Ny*(Nx-1)+i]=(2/pow(dx,2))*(s[(Nx-1)*Ny+i]-s[(Nx-2)*Ny+i]); //Right 
-//        }
-// }
+
 
 //void LidDrivenCavity::InnerVorticity(double* v, double* s, int Nx, int Ny, double dx, double dy){
 //      for (int i=1;i<Nx-1;i++){
@@ -236,17 +320,17 @@ void LidDrivenCavityExp::Initialise(int rank) //Use initialise to initialise all
 
 
 
-//void LidDrivenCavity::Integrate()
-//{    
-//  PoissonSolver* psolver=new PoissonSolver(); //Create new instance psolver of class Poisson Solver to implement solver calculations  
-//
-//  psolver->Initialise(Nx,Ny,dx,dy); //Initialises values within PoissonSolver class 
-//  double t=0; //First time step value  
-//  
-//    while (t<T){
-//            cout << "Time step is: " << t << endl << endl; 
-//            
-//             LidDrivenCavity::BoundaryConditions(Nx,Ny,v,dx,dy,dt,U); //Update with BCs //
+void LidDrivenCavityExp::Integrate(int rank)
+{    
+  //PoissonSolver* psolver=new PoissonSolver(); //Create new instance psolver of class Poisson Solver to implement solver calculations  
+
+  //psolver->Initialise(Nx,Ny,dx,dy); //Initialises values within PoissonSolver class 
+  double t=0; //First time step value  
+  
+   // while (t<T){
+            cout << "Time step is: " << t << endl << endl; 
+            
+             LidDrivenCavityExp::BoundaryConditions(rank,Nxloc,Nyloc,v,dx,dy,dt,U); //Update with BCs //
 //             
 //             
 //            
@@ -300,5 +384,5 @@ void LidDrivenCavityExp::Initialise(int rank) //Use initialise to initialise all
 //  delete [] v; 
 //  delete [] s; 
 //     
-//}
+}
 //      

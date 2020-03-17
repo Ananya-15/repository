@@ -56,22 +56,32 @@ public:
         double wkopt; 
                int lwork=-1; 
                int info=0; 
-               int nrhs=var; 
+               int nrhs=1; 
                int* ipiv=new int[var];
+               
+               
                
                //Will overwrite w1 //Copy and change it for now 
                double* varmat=new double[var]; 
+                cout << "Works here 1" << endl;
                cblas_dcopy(var,v1,1,varmat,1); //Will change so that varmat=w1 
-               F77NAME(dsysv)('U',var,nrhs,A,var,ipiv,varmat,var,&wkopt,lwork,info); 
+               cerr << "COpy successful" << endl; 
+               F77NAME(dsysv)('U',var,nrhs,A,var,ipiv,varmat,var,&wkopt,lwork,info);
+               
+               cerr << "Space created" << endl; 
                
                lwork=(int)wkopt; 
+               cerr << "Allocated work lenght is: " << lwork << endl << endl; 
                double* work = new double[lwork]; 
                F77NAME(dsysv)('U',var,nrhs,A,var,ipiv,varmat,var,work,lwork,info); //Will produce psi values in varmat 
+               
+               cerr << "Array created" << endl; 
                
                //Copy varmat back to psi1 
                cblas_dcopy(var,varmat,1,s1,1); 
                
                return s1; 
+               delete [] work; 
     }
    
    
