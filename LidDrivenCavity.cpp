@@ -5,6 +5,7 @@
 #include <math.h>
 #include "PrintMat.h"
 #include <cblas.h>
+#include <fstream>
 
  #define F77NAME(x) x##_ //Definition for using lapack solver 
  extern "C" {
@@ -63,11 +64,12 @@ void LidDrivenCavity::Initialise(string* val) //Initialise all variables //Initi
       v=new double[Nx*Ny]; //Initialize vorticity values 
       vnew=new double[Nx*Ny];//Voriticity at new timestep value 
       s=new double[Nx*Ny]; 
-      v1=new double[(Nx-2)*(Ny-2)]; //Initialize inner vorticity and streamfunction values 
-      s1=new double[(Nx-2)*(Ny-2)]; 
       nx=Nx-2; 
       ny=Ny-2; 
-      var=nx*ny; //
+      var=nx*ny; 
+      v1=new double[nx*ny]; //Initialize inner vorticity and streamfunction values 
+      s1=new double[nx*ny]; 
+      
       A=new double[var*var]; 
       
       for (int i=0;i<var;i++){
@@ -76,7 +78,7 @@ void LidDrivenCavity::Initialise(string* val) //Initialise all variables //Initi
           }
       }
         dx=Lx/(Nx-1.0); 
-        dy=Lx/(Ny-1.0);
+        dy=Ly/(Ny-1.0);
         U=1.0; 
        
        

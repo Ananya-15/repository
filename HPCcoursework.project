@@ -8,6 +8,7 @@
   <Description/>
   <Dependencies/>
   <VirtualDirectory Name="src">
+    <File Name="Paralleltry2.cpp"/>
     <File Name="LidDrivenCavityExp.cpp"/>
     <File Name="LidDrivenCavityExp.h"/>
     <File Name="Paralleltry.cpp"/>

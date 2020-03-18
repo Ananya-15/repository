@@ -4,6 +4,9 @@
 #include <math.h>
 #include "PrintMat.h"
 #include <cblas.h>
+#include <mpi.h> 
+#include <cassert>
+
 
 using namespace std; 
  #define F77NAME(x) x##_ //Definition for using lapack solver 
@@ -13,49 +16,23 @@ using namespace std;
  const int& ldb, double * work, const int& lwork, int& info);
  }
  
+ extern "C" {
+  void Cblacs_pinfo(int*, int*);
+  void Cblacs_get(int, int, int*);
+  void Cblacs_gridinit(int*, char const*, int, int);
+  void Cblacs_gridinfo(int, int*, int*, int*, int*);
+  void Cblacs_barrier(int , char*);
+  void Cblacs_gridexit(int);
+  void Cblacs_exit(int);
+  
+  int numroc_(int const& n, int const& nb, int const& iproc, int const& isproc, int const& nprocs);
+}
+ 
  //Create default destructor and constructor 
 LidDrivenCavityExp::LidDrivenCavityExp()=default; //Constructor 
 
 
 LidDrivenCavityExp::~LidDrivenCavityExp()=default;  //Destructor 
-
-void LidDrivenCavityExp::SetGlobalDomainSize(int nx, int ny)
-{
-   Nx=nx; 
-   Ny=ny; 
-}
-
-void LidDrivenCavityExp::SetDomainSize(double xlen, double ylen)
-{
-   Lxloc=xlen; 
-   Lyloc=ylen; 
-}
-
-void LidDrivenCavityExp::SetPartitions(int px,int py){
-    Px=px; 
-    Py=py;
-}
-
-void LidDrivenCavityExp::SetGridSize(int tempy, int tempx) //Solution created assuming Ny rows and Nx columns 
-{
-    Nxloc=tempx; 
-    Nyloc=tempy; 
-}
-
-void LidDrivenCavityExp::SetTimeStep(double deltat)
-{
-    dt=deltat; 
-}
-
-void LidDrivenCavityExp::SetFinalTime(double finalt)
-{
-    T=finalt; 
-}
-
-void LidDrivenCavityExp::SetReynoldsNumber(double re)
-{
-    Re=re;
-}
 
 void LidDrivenCavityExp::AssignGlobal(string *val){
 
@@ -69,6 +46,42 @@ void LidDrivenCavityExp::AssignGlobal(string *val){
               T=stod(val[7]); 
               Re=stod(val[8]);
 }
+
+void LidDrivenCavityExp::SubDomainInfo(int rank,int nprocs){
+     
+     row_loc=Px; //No. local rows and columns expected due to partitioning in process 
+     col_loc=Py; 
+     
+     Cblacs_pinfo(&rank,&nprocs); 
+     assert(nprocs>=row_loc*col_loc); //Assertion statement to validate user input np for chosen array size nx and ny 
+     
+     Cblacs_get(0,0,&ctxt); //Attains system context 
+     Cblacs_gridinit(&ctxt,"Col-major",row_loc,col_loc); //Creates process grid for a given context 
+     
+     Cblacs_gridinfo(ctxt,&row_loc,&col_loc,&myrow,&mycol);
+     
+    
+}
+
+
+void LidDrivenCavityExp::SetDomainSize()
+{  
+   Lxloc=Lx/Px; 
+   Lyloc=Ly/Py; 
+}
+
+
+
+void LidDrivenCavityExp::SetGridSize() //Solution created assuming Ny rows and Nx columns 
+{
+      Nyloc=numroc_(Ny,1,myrow,0,row_loc);
+      Nxloc=numroc_(Nx,1,mycol,0,col_loc); 
+      
+     cout << "Local row length: " << Nyloc << endl; //Verify parallelisation split by checking local subdomain size 
+     cout << "Local Column length: " << Nxloc << endl;  
+     
+}
+
 
 void LidDrivenCavityExp::Initialise(int rank) //Use initialise to initialise all pointer values 
 {    
@@ -98,7 +111,20 @@ void LidDrivenCavityExp::Initialise(int rank) //Use initialise to initialise all
         dx=Lx/(Nx-1.0); //Determine other global variables used across several class member functions 
         dy=Lx/(Ny-1.0); 
         U=1.0;
+        
+        if (dt>=Re*dx*dy/4){
+           throw logic_error("Chosen value of dt too large"); 
+//     
+       }
       
+}
+
+void LidDrivenCavityExp::BoundaryVectors(double* arr, int Nxloc; int Nyloc){
+    col_left=
+    col_right=
+    col_top=
+    col_bottom= 
+    
 }
 
  void LidDrivenCavityExp::BoundaryConditions(int rank,int Nxloc, int Nyloc, double* v, double dx, double dy, double dt, double U){//){
@@ -146,7 +172,7 @@ void LidDrivenCavityExp::Initialise(int rank) //Use initialise to initialise all
          }
 //         
          if  (rank<(Px*Py) && rank>=(Px-1)*Py){
-             if (Nxloc==1){ //Communication necessary, call communicator class function
+             if (Nxloc==1){ //Communication necessary, call communicator class functionccccccc
           
                 }
               else {
@@ -163,112 +189,7 @@ void LidDrivenCavityExp::Initialise(int rank) //Use initialise to initialise all
     }
  }
     
-       
-      
-//      
-//      A=new double[var*var]; 
-//      
-//      for (int i=0;i<var;i++){
-//          for (int j=0;j<var;j++){
-//              A[i*var+j]=0; 
-//          }
-//      }
-//        
-
-
-//void LidDrivenCavityExp::Initialise(string* val) //Initialise all variables //Initialise all arrays required for the operation
-//{    
-//    
-//       Lx=stod(val[0]); 
-//       Ly=stod(val[1]); 
-//       Nx=stoi(val[2]); 
-//       Ny=stoi(val[3]); 
-//       Px=stoi(val[4]); 
-//       Py=stoi(val[5]);
-//       dt=stod(val[6]);
-//       T=stoi(val[7]);  
-//       Re=stod(val[8]); 
-//
-//      v=new double[Nx*Ny]; //Initialize vorticity values 
-//      vnew=new double[Nx*Ny];//Voriticity at new timestep value 
-//      s=new double[Nx*Ny]; 
-//      v1=new double[(Nx-2)*(Ny-2)]; //Initialize inner vorticity and streamfunction values 
-//      s1=new double[(Nx-2)*(Ny-2)]; 
-//      nx=Nx-2; 
-//      ny=Ny-2; 
-//      var=nx*ny; //
-//      A=new double[var*var]; 
-//      
-//      for (int i=0;i<var;i++){
-//          for (int j=0;j<var;j++){
-//              A[i*var+j]=0; 
-//          }
-//      }
-//        dx=Lx/(Nx-1.0); 
-//        dy=Lx/(Ny-1.0);
-//        U=1.0; 
-//       
-//       
-//       if (dt>=Re*dx*dy/4){
-//           cout << "Chosen value of dt too large" << endl; 
-////           break; 
-//       }
-//
-//}
-
- //Additional defined class functions 
- 
-// 
-// double* LidDrivenCavity::PoissonMatrix(int nx,int ny, int var, double dx, double dy){ //Gets the function to return a pointer of size A
-//           //Create matrix A //get ad array length error for some reason :( //Temporary variable to obtain matrix A 
-//
-//        for (int i=0;i<var;i++){
-//            A[i*var+i]=(2/(dx*dx))+(2/(dy*dy));
-//           if (i<var-1 && ((i+1)%ny)!=0){
-//               A[(i+1)*var+i]=-1/(dy*dy); 
-//           }
-//           else {
-//               A[(i+1)*var+i]=0; 
-//           }
-//           if (i<var-(ny)){
-//              A[(i+ny)*var+i]=-1/(dx*dx); 
-//           }
-//           else {
-//               A[(i+ny)*var+i]=0;
-//               
-//           }
-//         }
-//     return A; 
-// }
- 
-// double* LidDrivenCavity::SolveMatrix(double* A, double* w1, double* s1,int var){ //Returns s1 
-// 
-// 
-//           double wkopt; 
-//           int lwork=-1; 
-//           int info=0; 
-//           int nrhs=var; 
-//           int* ipiv=new int[var];
-//           
-//           //Will overwrite w1 //Copy and change it for now 
-//           double* varmat=new double[var]; 
-//           cblas_dcopy(var,v1,1,varmat,1); //Will change so that varmat=w1 
-//           F77NAME(dsysv)('U',var,nrhs,A,var,ipiv,varmat,var,&wkopt,lwork,info); 
-//           
-//           lwork=(int)wkopt; 
-//           
-//           double* work = new double[lwork]; 
-//           F77NAME(dsysv)('U',var,nrhs,A,var,ipiv,varmat,var,work,lwork,info); //Will produce psi values in varmat 
-//           
-//           //Copy varmat back to psi1 
-//           cblas_dcopy(var,varmat,1,s1,1); 
-//           
-//           return s1; 
-//           
-//           delete[] varmat; 
-//           delete [] v1; 
-// }
-
+           
 
 
 //void LidDrivenCavity::InnerVorticity(double* v, double* s, int Nx, int Ny, double dx, double dy){

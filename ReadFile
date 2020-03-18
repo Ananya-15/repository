@@ -1,0 +1,7 @@
+clear 
+clc 
+
+fid=fopen('StreamFunctionVal.txt','r'); 
+formatSpec="%d"; 
+psi=fscanf(fid,formatSpec,[20,20]); 
+

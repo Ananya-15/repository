@@ -94,18 +94,8 @@ int main(int argc, char **argv)
      
      solver->SetDomainSize(xlen,ylen); 
      
-    // solver->SetGlobalDomainSize(Nx,Ny);
-     
-  //   solver->SetPartitions(Px,Py); 
-     
-    // solver->SetFinalTime(T); 
-     
      solver->SetGridSize(nr,nc);
     
-   // solver->SetReynoldsNumber(Re); 
-//     
-    //solver->SetTimeStep(dt); 
-//     
      solver->Initialise(rank); 
      cout << "After boundary condition imposition" << endl;
      solver->Integrate(rank); 

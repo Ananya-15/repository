@@ -11,15 +11,13 @@ class LidDrivenCavityExp
 public:
     LidDrivenCavityExp();
     ~LidDrivenCavityExp(); 
-    void SetDomainSize(double xlen, double ylen);
-    void SetGridSize(int tempx, int tempy);
-    void SetTimeStep(double deltat);
-    void SetFinalTime(double finalt);
-    void SetReynoldsNumber(double Re);
-    void SetPartitions(int px, int py); 
-    void SetGlobalDomainSize(int nx, int ny);
+    void SetDomainSize();
+    void SetGridSize();
+//    void SetPartitions(int px, int py); 
+//    void SetGlobalDomainSize();
     
     //initialise and integrate perform solver calculations to determine streamfunction and vorticity values through time 
+    void SubDomainInfo(int rank, int nprocs); 
     void AssignGlobal(string* val);
     void Initialise(int rank);
     void Integrate(int rank);
@@ -48,6 +46,7 @@ public:
     
 
 private:
+    //Define pointers used throughout the process 
     double* v = nullptr; //vorticity
     double* vnew=nullptr; //Vorticity at new timestep 
     double* s = nullptr; //streamfunction 
@@ -67,18 +66,23 @@ private:
     double Re;
     int    Nx;
     int    Ny;
-    int    nx; 
-    int    ny; 
-    int    var; 
-    int Px; 
+//    int    nx; 
+//    int    ny; 
+//    int    var; 
+    int Px; //Partition number chosen by user 
     int Py; 
     
     int Nxloc; 
     int Nyloc; 
     double Lxloc; 
     double Lyloc; 
-    int nxloc; 
-    int nyloc; 
-    //Local variable definition 
+//    int nxloc; 
+//    int nyloc; 
+    //Subdomain array size and length definition 
+    
+     int ctxt;
+     int myrow, mycol, row_loc, col_loc; 
+     int nr, nc; //No. of columns and rows determined using fortran numroc function 
+    //definitions for parallelisation 
     
 };

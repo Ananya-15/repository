@@ -20,9 +20,9 @@ public:
     void Integrate();
     
     //Functions which should belong to Poisson Solver class 
-     double* PoissonMatrix(double dx, double dy); 
+     void PoissonMatrix(double dx, double dy); 
      //double* SolveMatrix(double* A, double* w1, double* s1, int var); 
-     double* SolveMatrix(double* A, double* w1, double* s1,int var,int Nx,int Ny); 
+     void SolveMatrix(double* A, double* w1, double* s1,int var,int Nx,int Ny,int* ipiv); 
      
     //Calculates boundary conditions for the lid cavity problem 
     void BoundaryConditions(int Nx, int Ny, double* v, double dx, double dy, double dt, double U); 
@@ -49,6 +49,10 @@ private:
     double *v1= nullptr; //Define inner vorticity and streamfunctions
     double *s1= nullptr; 
     double* A=nullptr; 
+    int* ipiv=nullptr;
+    
+    
+    
     //double* A=nullptr; 
 
     
