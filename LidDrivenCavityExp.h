@@ -2,6 +2,8 @@
 //#include "PoissonSolver.h"
 #include <string>
 #include <iostream>
+//#include <mpi.h>
+
 using namespace std;
 
 
@@ -17,10 +19,14 @@ public:
 //    void SetGlobalDomainSize();
     
     //initialise and integrate perform solver calculations to determine streamfunction and vorticity values through time 
-    void SubDomainInfo(int rank, int nprocs); 
+    void SubDomainInfo(); 
     void AssignGlobal(string* val);
-    void Initialise(int rank);
-    void Integrate(int rank);
+    void Initialise();
+    void Integrate();
+    void BoundaryVectors(double* v, double* s,int Nxloc, int Nyloc);
+    int CheckParallel(); 
+    double* CommunicateBound(double* vect,double* y,int size, int src, int dest, int tag);
+    
     
     //Functions which should belong to Poisson Solver class 
     // double* PoissonMatrix(double dx, double dy); 
@@ -43,6 +49,8 @@ public:
     
     //Updates streamfunction values for the next time step 
     void UpdateInnerStream(double*s, double*s1, int Nx, int Ny); 
+    
+    
     
 
 private:
@@ -76,10 +84,23 @@ private:
     int Nyloc; 
     double Lxloc; 
     double Lyloc; 
+    
+    double* v_left=nullptr;
+    double* s_left=nullptr;
+    
+    double* v_right=nullptr;
+    double* s_right=nullptr;
+    
+    double* v_top=nullptr;
+    double* s_top=nullptr;
+    
+    double* v_bot=nullptr;
+    double* s_bot=nullptr;
 //    int nxloc; 
 //    int nyloc; 
     //Subdomain array size and length definition 
     
+     int rank, nprocs, retval_rank, retval_size;
      int ctxt;
      int myrow, mycol, row_loc, col_loc; 
      int nr, nc; //No. of columns and rows determined using fortran numroc function 
