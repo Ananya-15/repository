@@ -187,47 +187,55 @@ void LidDrivenCavityExp::BoundaryVectors(double* v, double*s, int Nxloc, int Nyl
 
 void LidDrivenCavityExp::CommunicateBound(){ //As boundary values at each subdomain are required for calculating vorticity at current and next timesteps, function
 //is created to communicate and store values between different subdomains
+//y_left stores s_left from adjacent subdomain 
+//x_left stores v_left from adjacent subdomain 
+//y_top stores s_bot from subdomain right below //bottom values are stored on top row 
+//y_bot stores s_top from subomain right above  //top values are stored on bottom row 
+
   if (Px>1){
     if (mycol<Px-1){
 
-        MPI_Send(&s_left,Nyloc,MPI_DOUBLE,rank+Py,0,MPI_COMM_WORLD);
-        MPI_Send(&v_left,Nyloc,MPI_DOUBLE,rank+Py,2,MPI_COMM_WORLD);
+        MPI_Send(s_left,Nyloc,MPI_DOUBLE,rank+Py,0,MPI_COMM_WORLD);
+        MPI_Send(v_left,Nyloc,MPI_DOUBLE,rank+Py,2,MPI_COMM_WORLD);
         cout << "Sends first" << endl; 
-        MPI_Recv(&y_right,Nyloc,MPI_DOUBLE,rank+Py,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-        MPI_Recv(&x_right,Nyloc,MPI_DOUBLE,rank+Py,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
+        MPI_Recv(y_right,Nyloc,MPI_DOUBLE,rank+Py,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
+        //printmat(Nyloc,1,y_right);
+        MPI_Recv(x_right,Nyloc,MPI_DOUBLE,rank+Py,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
+        //printmat(Nyloc,1,x_right); 
         cout << "Receives second" << endl; 
      }
    if (mycol>0){
 
     //       int tag=; 
     //       int tag1=1; 
-           MPI_Recv(&y_left,Nyloc,MPI_DOUBLE,rank-Py,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-           MPI_Recv(&x_left,Nyloc,MPI_DOUBLE,rank-Py,2,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
+           MPI_Recv(y_left,Nyloc,MPI_DOUBLE,rank-Py,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
+           MPI_Recv(x_left,Nyloc,MPI_DOUBLE,rank-Py,2,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
                    cout << "Receives first" << endl; 
-           MPI_Send(&s_right,Nyloc,MPI_DOUBLE,rank-Py,1,MPI_COMM_WORLD); 
-           MPI_Send(&v_right,Nyloc,MPI_DOUBLE,rank-Py,3,MPI_COMM_WORLD); 
+           MPI_Send(s_right,Nyloc,MPI_DOUBLE,rank-Py,1,MPI_COMM_WORLD); 
+           //printmat(Nyloc,1,s_right); 
+           MPI_Send(v_right,Nyloc,MPI_DOUBLE,rank-Py,3,MPI_COMM_WORLD); 
                    cout << "Sends second" << endl; 
        }
  }
 //  
   if (Py>1){
    if (myrow<Py-1){
-       MPI_Send(&s_bot,Nxloc,MPI_DOUBLE,rank+1,0,MPI_COMM_WORLD); 
-       MPI_Send(&v_bot,Nxloc,MPI_DOUBLE,rank+1,2,MPI_COMM_WORLD); 
+       MPI_Send(s_bot,Nxloc,MPI_DOUBLE,rank+1,0,MPI_COMM_WORLD); 
+       MPI_Send(v_bot,Nxloc,MPI_DOUBLE,rank+1,2,MPI_COMM_WORLD); 
        cout << "Sends third" << endl; 
 //        cout << "Rank+1 is: " << rank+1 << endl; 
-       MPI_Recv(&y_top,Nxloc,MPI_DOUBLE,rank+1,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-       MPI_Recv(&x_top,Nxloc,MPI_DOUBLE,rank+1,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
+       MPI_Recv(y_top,Nxloc,MPI_DOUBLE,rank+1,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
+      MPI_Recv(x_top,Nxloc,MPI_DOUBLE,rank+1,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
              cout << "Receives fourth" << endl; 
     
-      
+//      
    }
    if (myrow>0){
-       MPI_Recv(&y_bot,Nxloc,MPI_DOUBLE,rank-1,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-       MPI_Recv(&x_bot,Nxloc,MPI_DOUBLE,rank-1,2,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
+       MPI_Recv(y_top,Nxloc,MPI_DOUBLE,rank-1,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
+      MPI_Recv(x_top,Nxloc,MPI_DOUBLE,rank-1,2,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
        cout << "Receives third" << endl; 
-       MPI_Send(&s_top,Nxloc,MPI_DOUBLE,rank-1,1,MPI_COMM_WORLD); 
-       MPI_Send(&v_top,Nxloc,MPI_DOUBLE,rank-1,3,MPI_COMM_WORLD); 
+       MPI_Send(s_bot,Nxloc,MPI_DOUBLE,rank-1,1,MPI_COMM_WORLD); 
+       MPI_Send(v_bot,Nxloc,MPI_DOUBLE,rank-1,3,MPI_COMM_WORLD); 
        cout << "Sends Fourth" << endl;
 //       cout << rank-1<< endl; 
      
