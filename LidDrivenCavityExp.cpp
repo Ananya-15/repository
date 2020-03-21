@@ -197,24 +197,21 @@ void LidDrivenCavityExp::CommunicateBound(){ //As boundary values at each subdom
 
         MPI_Send(s_left,Nyloc,MPI_DOUBLE,rank+Py,0,MPI_COMM_WORLD);
         MPI_Send(v_left,Nyloc,MPI_DOUBLE,rank+Py,2,MPI_COMM_WORLD);
-        cout << "Sends first" << endl; 
+       // cout << "Sends first" << endl; 
         MPI_Recv(y_right,Nyloc,MPI_DOUBLE,rank+Py,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
         //printmat(Nyloc,1,y_right);
         MPI_Recv(x_right,Nyloc,MPI_DOUBLE,rank+Py,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
         //printmat(Nyloc,1,x_right); 
-        cout << "Receives second" << endl; 
+        //cout << "Receives second" << endl; 
      }
    if (mycol>0){
-
-    //       int tag=; 
-    //       int tag1=1; 
            MPI_Recv(y_left,Nyloc,MPI_DOUBLE,rank-Py,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
            MPI_Recv(x_left,Nyloc,MPI_DOUBLE,rank-Py,2,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-                   cout << "Receives first" << endl; 
+              //     cout << "Receives first" << endl; 
            MPI_Send(s_right,Nyloc,MPI_DOUBLE,rank-Py,1,MPI_COMM_WORLD); 
            //printmat(Nyloc,1,s_right); 
            MPI_Send(v_right,Nyloc,MPI_DOUBLE,rank-Py,3,MPI_COMM_WORLD); 
-                   cout << "Sends second" << endl; 
+                //   cout << "Sends second" << endl; 
        }
  }
 //  
@@ -222,50 +219,45 @@ void LidDrivenCavityExp::CommunicateBound(){ //As boundary values at each subdom
    if (myrow<Py-1){
        MPI_Send(s_bot,Nxloc,MPI_DOUBLE,rank+1,0,MPI_COMM_WORLD); 
        MPI_Send(v_bot,Nxloc,MPI_DOUBLE,rank+1,2,MPI_COMM_WORLD); 
-       cout << "Sends third" << endl; 
+       //cout << "Sends third" << endl; 
 //        cout << "Rank+1 is: " << rank+1 << endl; 
-       MPI_Recv(y_top,Nxloc,MPI_DOUBLE,rank+1,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-      MPI_Recv(x_top,Nxloc,MPI_DOUBLE,rank+1,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-             cout << "Receives fourth" << endl; 
+       MPI_Recv(y_bot,Nxloc,MPI_DOUBLE,rank+1,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
+      MPI_Recv(x_bot,Nxloc,MPI_DOUBLE,rank+1,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
+            // cout << "Receives fourth" << endl; 
     
 //      
    }
    if (myrow>0){
        MPI_Recv(y_top,Nxloc,MPI_DOUBLE,rank-1,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
       MPI_Recv(x_top,Nxloc,MPI_DOUBLE,rank-1,2,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-       cout << "Receives third" << endl; 
-       MPI_Send(s_bot,Nxloc,MPI_DOUBLE,rank-1,1,MPI_COMM_WORLD); 
-       MPI_Send(v_bot,Nxloc,MPI_DOUBLE,rank-1,3,MPI_COMM_WORLD); 
-       cout << "Sends Fourth" << endl;
+      cout <<"received y_top is: " << endl; 
+      printmat(1,Nyloc,y_top); 
+      // cout << "Receives third" << endl; 
+       MPI_Send(s_top,Nxloc,MPI_DOUBLE,rank-1,1,MPI_COMM_WORLD); 
+       MPI_Send(v_top,Nxloc,MPI_DOUBLE,rank-1,3,MPI_COMM_WORLD); 
+      // cout << "Sends Fourth" << endl;
 //       cout << rank-1<< endl; 
      
       }
 
   }
   
+  MPI_Barrier(MPI_COMM_WORLD); 
+  
     
 }
 
  void LidDrivenCavityExp::BoundaryConditions(int rank, int Nxloc, int Nyloc, double* v, double dx, double dy, double dt, double U){//){
       
-      if (rank % Py==0) { //Bottom BC points 
+      if (myrow==0) { //Bottom BC points 
          if (Nyloc==1){ //For the case when communication with another subdomain is necessary 
-//                int src=rank+1; 
-//                int dest=rank;
-//                int tag=0; 
-//                cout << "Nxloc is: " << Nxloc << endl; 
-//                double* y=new double[Nxloc]; //Create variable y to which the message can be copied 
-//                y=LidDrivenCavityExp::CommunicateBound(s_bot,y,Nxloc,src,dest,tag); 
-//                cout << "Retrieved message is: " << endl; 
-//                printmat(1,Nxloc,y); //For some reason, y isn't received correctly 
-//                    for (int i=0;i<Nxloc;i++){
-//                                v[i]=(v[i]-y[i])*(2.0/pow(dy,2)); 
-//                            }
-//              printmat(1,Nxloc,y); 
-//              printmat(1,Nxloc,v); 
-//              
-//             delete[] y; 
-         
+                    for (int i=0;i<Nxloc;i++){
+                                v[i]=(s[i]-y_top[i])*(2.0/pow(dy,2)); //y_top stores s_bot of row beneath 
+                            }
+                  cout << "y_top is: " << endl; 
+                  printmat(1,Nxloc,y_top); 
+                  cout << "v is: " << endl; 
+                  printmat(1,Nxloc,v); 
            }
             
          else {
@@ -276,17 +268,11 @@ void LidDrivenCavityExp::CommunicateBound(){ //As boundary values at each subdom
               }
      }
 //
-       if (rank % (Py-1)==0) { //Top BC points 
+       if (myrow==Py-1) { //Top BC points 
              if (Nyloc==1){ //Communication necessary
-//                int src=rank-1; 
-//                int dest=rank;
-//                int tag=0; 
-//                double* y=new double[Nxloc];
-//                y=LidDrivenCavityExp::CommunicateBound(s_top,y,Nxloc,src,dest,tag); 
-//                        for (int i=0;i<Nxloc;i++){
-//                            v[i]=(v[i]-y[i])*(2.0/pow(dy,2)); 
-//                        }
-//              delete[] y; 
+                        for (int i=0;i<Nxloc;i++){
+                            v[i]=(s[i]-y_bot[i])*(2.0/pow(dy,2)); //y_bot stores s_top 
+                        }
               
             }
              else {
@@ -296,41 +282,29 @@ void LidDrivenCavityExp::CommunicateBound(){ //As boundary values at each subdom
                         
                   }
          }
-//////         
-//////         
-        if  (rank<Py){ //left 
+////////         
+////////         
+        if  (mycol==0){ //left 
              if (Nxloc==1){ //Communication necessary, call communicator class function
-//                int src=rank+Py; 
-//                int dest=rank;
-//                int tag=0; 
-//                double* y=new double[Nyloc];
-//                y=LidDrivenCavityExp::CommunicateBound(s_left,y,Nyloc,src,dest,tag); 
-//                     for (int i=0;i<Nyloc;i++){
-//                        v[i]=(v[i]-y[i])*(2.0/pow(dx,2)); 
-//                    }
-//          
-//                 delete[] y; 
+                     for (int i=0;i<Nyloc;i++){
+                        v[i]=(s[i]-y_left)*(2.0/pow(dx,2)); //Stores s_left from adjacent array
+                    }
+//         
                 }
-                
+//                
               else {
                    for (int i=0;i<Nyloc;i++){
                     v[i]=(2/(pow(dx,2)))*(s[i]-s[i+Nyloc]); 
                     }
               }
          }
-////         
-//     
-      if  (rank<(Px*Py) && rank>=(Px-1)*Py){
-             if (Nxloc==1){ //Communication necessary, call communicator class functionccccccc
-//                int src=rank-Py; 
-//                int dest=rank;
-//                int tag=0; 
-//                double* y=new double[Nyloc];
-//                y=LidDrivenCavityExp::CommunicateBound(s_right,y,Nyloc,src,dest,tag); 
-//                     for (int i=0;i<Nyloc;i++){
-//                        v[i]=(v[i]-y[i])*(2.0/pow(dx,2)); 
-//                    }
-//                   delete[] y;
+//////         
+////     
+      if  (mycol==Px-1){
+             if (Nxloc==1){ //Communication necessary, call communicator class function
+                     for (int i=0;i<Nyloc;i++){
+                        v[i]=(s[i]-y_right[i])*(2.0/pow(dx,2)); 
+                    }
                 }
 
               else {
@@ -351,14 +325,63 @@ void LidDrivenCavityExp::CommunicateBound(){ //As boundary values at each subdom
  
  }
 
+int* LidDrivenCavityExp::GetIndex(){  //Returns an array of indices consisting of i,imax, etc. to be used for calculating inner vorticity values 
 
-//void LidDrivenCavity::InnerVorticity(double* v, double* s, int Nx, int Ny, double dx, double dy){
-//      for (int i=1;i<Nx-1;i++){
-//                for (int j=1;j<Ny-1;j++){
-//                    v[i*Ny+j]=-(s[(i*Ny)+j-1]-2*s[i*Ny+j]+s[(i*Ny)+j+1])/(pow(dy,2))-(s[(i-1)*Ny+j]-2*s[i*Ny+j]+s[(i+1)*Ny+j])/(pow(dx,2)); 
-//                }
-//      }
-// }
+
+}
+
+void LidDrivenCavity::InnerVorticity(){
+    int i; 
+    int j; 
+    if (myrow==0||mycol==0||myrow==Py-1||mycol==Px=1){ //Indexing for boundary values will be different, can be dedcued in a separate function
+        //Call function which returns an array of indexing values 
+        //i=..
+        //imax=..
+        //j=..
+        //jmax=..
+    }
+    else {
+         i=0; 
+         j=0;
+         imax=Nxloc; 
+         jmax=Nyloc;         
+    }
+    
+    double foo; 
+    double foo1; 
+    double foo2; 
+    double foo3; 
+    for (i;i<imax;i++){
+        for (j;j<jmax;j++){
+            if (i==0){
+                foo=y_right[j]; 
+            }
+            else {
+                foo=s[(i-1)*Nyloc+j]; 
+            }
+            if (i==Nxloc-1){
+                foo1=y_left[j]; 
+            }
+            else {
+                foo1=s[(i+1)*Nyloc+j];
+            }
+            if (j==0) {
+                foo2=y_bot[i];
+            }
+            else {
+                foo2=s[i*Nyloc+j-1];
+            }
+            if (j==Nyloc-1){
+                foo3=y_top[i];
+            }
+            else {
+                foo4=s[i*Nyloc+j+1]; //After checking all the conditions, v is finally computed 
+            }
+            v[i*Nyloc+j]=-((foo1-2*v[i*Nyloc+j]+foo)/(pow(dx,2))-(foo4-2*v[i*Nyloc+j]+foo2)/(pow(dy,2))); 
+        }
+    }
+
+ }
  
 
 
@@ -415,10 +438,12 @@ void LidDrivenCavityExp::Integrate()
    // while (t<T){
 //            cout << "Time step is: " << t << endl << endl; 
              LidDrivenCavityExp::BoundaryVectors(v,s,Nxloc,Nyloc); //Obtain rows and columns located at the boundaries of subdomains 
+             
+             LidDrivenCavityExp::CommunicateBound(); 
             
              LidDrivenCavityExp::BoundaryConditions(rank,Nxloc,Nyloc,v,dx,dy,dt,U); //Update with BCs //
              
-             LidDrivenCavityExp::CommunicateBound(); 
+             
              
              
 //             
