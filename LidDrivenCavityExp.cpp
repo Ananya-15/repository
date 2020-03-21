@@ -326,80 +326,166 @@ void LidDrivenCavityExp::CommunicateBound(){ //As boundary values at each subdom
  }
 
 int* LidDrivenCavityExp::GetIndex(){  //Returns an array of indices consisting of i,imax, etc. to be used for calculating inner vorticity values 
-
+  int* ind = new int[4]; 
+         if (myrow==0 && mycol==0){
+             ind[0]=1; 
+             ind[1]=Nxloc; 
+             ind[2]=1; 
+             ind[3]=Nyloc;
+         }
+         else if (myrow==0){
+             ind[0]=1; 
+             ind[1]=Nxloc; 
+             ind[2]=0; 
+             ind[3]=Nyloc;
+         }
+         else if (myrow==Py-1&&mycol==0){
+             ind[0]=1; 
+             ind[1]=Nxloc; 
+             ind[2]=0; 
+             ind[3]=Nyloc-1;
+         }
+         else if (myrow==Py-1){
+             ind[0]=0; 
+             ind[1]=Nxloc; 
+             ind[2]=0; 
+             ind[3]=Nyloc-1;
+         }
+         else if (myrow==Py-1&&mycol==Px-1){
+             ind[0]=0; 
+             ind[1]=Nxloc-1; 
+             ind[2]=0; 
+             ind[3]=Nyloc-1;
+         }
+         else if (mycol==Px-1){
+             ind[0]=0; 
+             ind[1]=Nxloc-1; 
+             ind[2]=0; 
+             ind[3]=Nyloc;
+         }
+         else if (mycol==Px-1&&myrow==0){
+             ind[0]=0; 
+             ind[1]=Nxloc-1; 
+             ind[2]=1; 
+             ind[3]=Nyloc;
+         }
+         else {
+             ind[0]=0; 
+             ind[1]=0; 
+             ind[2]=0; 
+             ind[3]=0;
+             
+         }
+         return ind; 
 
 }
 
 void LidDrivenCavity::InnerVorticity(){
-    int i; 
-    int j; 
-    if (myrow==0||mycol==0||myrow==Py-1||mycol==Px=1){ //Indexing for boundary values will be different, can be dedcued in a separate function
-        //Call function which returns an array of indexing values 
-        //i=..
-        //imax=..
-        //j=..
-        //jmax=..
-    }
-    else {
-         i=0; 
-         j=0;
-         imax=Nxloc; 
-         jmax=Nyloc;         
-    }
+    int i, imax, j, jmax; 
+    int* ind=new int[4]; 
+    ind=LidDrivenCavityExp::GetIndex();
     
-    double foo; 
-    double foo1; 
-    double foo2; 
-    double foo3; 
+    i=ind[0]; 
+    imax=ind[1]; 
+    j=ind[2]; 
+    jmax=ind[3]; 
+    
+    
+    double stemp, stemp1, stemp2, stemp3; 
     for (i;i<imax;i++){
         for (j;j<jmax;j++){
             if (i==0){
-                foo=y_right[j]; 
+                stemp=y_right[j]; 
             }
-            else {
-                foo=s[(i-1)*Nyloc+j]; 
+            else{
+                stemp=s[(i-1)*Nyloc+j]; 
             }
             if (i==Nxloc-1){
-                foo1=y_left[j]; 
+                stemp1=y_left[j]; 
             }
             else {
-                foo1=s[(i+1)*Nyloc+j];
+                stemp1=s[(i+1)*Nyloc+j];
             }
             if (j==0) {
-                foo2=y_bot[i];
+                stemp2=y_bot[i];
             }
             else {
-                foo2=s[i*Nyloc+j-1];
+                stemp2=s[i*Nyloc+j-1];
             }
             if (j==Nyloc-1){
-                foo3=y_top[i];
+                stemp3=y_top[i];
             }
             else {
-                foo4=s[i*Nyloc+j+1]; //After checking all the conditions, v is finally computed 
+                stemp3=s[i*Nyloc+j+1]; //After checking all the conditions, v is finally computed 
             }
-            v[i*Nyloc+j]=-((foo1-2*v[i*Nyloc+j]+foo)/(pow(dx,2))-(foo4-2*v[i*Nyloc+j]+foo2)/(pow(dy,2))); 
+            v[i*Nyloc+j]=-((stemp1-2*v[i*Nyloc+j]+stemp)/(pow(dx,2))-(stemp3-2*v[i*Nyloc+j]+stemp2)/(pow(dy,2))); 
         }
     }
+    delete[] ind; 
 
  }
  
 
 
+ void LidDrivenCavity::NextInnerVorticity(){
+    int i, imax, j, jmax; 
+    int* ind=new int[4]; 
+    ind=LidDrivenCavityExp::GetIndex();
+    
+    i=ind[0]; 
+    imax=ind[1]; 
+    j=ind[2]; 
+    jmax=ind[3]; 
+    
+    
+    double stemp, stemp1, stemp2, stemp3; 
+    double vtemp,vtemp1,vtemp2,vtemp3; 
+    double temp1,temp2,temp3; 
+    for (i;i<imax;i++){
+        for (j;j<jmax;j++){
+            if (i==0){
+                stemp=y_right[j]; 
+                vtemp=x_right[j]; 
+            }
+            else {
+                stemp=s[(i-1)*Nyloc+j]; 
+                vtemp=v[(i-1)*Nyloc+j]
+            }
+            if (i==Nxloc-1){
+                stemp1=y_left[j]; 
+                vtemp1=x_left[j];
+            }
+            else {
+                stemp1=s[(i+1)*Nyloc+j];
+                vtemp1=v[(i+1)*Nyloc+j]
+            }
+            if (j==0) {
+                stemp2=y_bot[i];
+                vtemp2=x_bot[i];
+            }
+            else {
+                stemp2=s[i*Nyloc+j-1];
+                vtemp2=v[i*Nyloc+j-1]
+            }
+            if (j==Nyloc-1){
+                stemp3=y_top[i];
+                vtemp3=x_top[i]; 
+            }
+            else {
+                stemp3=s[i*Nyloc+j+1]; //After checking all the conditions, v is finally computed 
+                vtemp3=v[i*Nyloc+j+1];
+            }
+            temp1=(stemp3-stemp2)*(vtemp1-vtemp)/(4*dy*dx);
+            temp2=(stemp1-stemp)*(vtemp3-vtemp2)/(4*dy*dx); 
+            temp3=(1/Re)*((vtemp2-2*v[i*Nyloc+j]+vtemp3)/(pow(dy,2))+(vtemp-2*v[i*Nyloc+j]+vtemp1)/(pow(dx,2))); 
+            vnew[i*Nyloc+j]=v[i*Nyloc+j]+dt*(temp2-temp1+temp3); 
+            
+        }
+    }
+    delete[] ind; 
 
-
-// void LidDrivenCavity::NextInnerVorticity(double* v, double* s, int Nx, int Ny, double dx, double dy, double dt, double Re){
-//        for (int i=1;i<Nx-1;i++){
-//            for (int j=1;j<Ny-1;j++){ //Create temporary variables to ensure ease of reading 
-//                double temp1=(s[(i)*Ny+j+1]-s[i*Ny+j-1])*(v[(i+1)*Ny+j]-v[(i-1)*Ny+j])/(4*dy*dx); 
-//                double temp2=(s[(i+1)*Ny+j]-s[(i-1)*Ny+j])*(v[i*Ny+j+1]-v[i*Ny+j-1])/(4*dy*dx); 
-//                double temp3=(1/Re)*((v[(i*Ny)+j-1]-2*v[i*Ny+j]+v[(i*Ny)+j+1])/(pow(dy,2))+(v[(i-1)*Ny+j]-2*v[i*Ny+j]+v[(i+1)*Ny+j])/(pow(dx,2))); 
-//                vnew[i*Ny+j]=v[i*Ny+j]+dt*(temp2-temp1+temp3); 
-//                
-//            }
-//        }
-//
-// }
-// 
+ }
+ 
 
 
 //void LidDrivenCavity::RecoverInnerVorticity(double*vnew, double*v1, int Nx, int Ny){
