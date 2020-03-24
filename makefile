@@ -1,13 +1,13 @@
-default: myprog 
+default: myprogpar
 
-LidDrivenCavitySolver.o: LidDrivenCavitySolver.cpp
-	g++ -Wall -o LidDrivenCavitySolver.o -c LidDrivenCavitySolver.cpp
+Paralleltry2.o: Paralleltry2.cpp
+	mpicxx -Wall -o Paralleltry2.o -c Paralleltry2.cpp
 
-LidDrivenCavity.o: test.cpp LidDrivenCavity.h PrintMat.h PoissonSolver.h
-	g++ -Wall -o test.o -c test.cpp
+LidDrivenCavityExp.o: LidDrivenCavityExp.cpp LidDrivenCavity.h PrintMat.h 
+	mpicxx -Wall -o LidDrivenCavityExp.o -c LidDrivenCavityExp.cpp
 
-myprog: LidDrivenCavitySolver.o test.o 
-	g++ -o myprog LidDrivenCavitySolver.o test.o -llapack -lblas
+myprogpar: Paralleltry2.o LidDrivenCavityExp.o 
+	mpicxx -o myprogpar Paralleltry2.o LidDrivenCavityExp.o -lscalapack-openmpi -lblas
 
 .PHONY: clean 
 	target
