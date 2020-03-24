@@ -1,8 +1,10 @@
 //#pragma once
-//#include "PoissonSolver.h"
+
 #include <string>
 #include <iostream>
-//#include <mpi.h>
+
+//Created by Ananya Dubey. LidDrivenCavtyExp.h contains class definition of LidDrivenCavityExp. Member functions and global variables are declared here, but 
+//full definition has been provided in LidDrivenCavityExp.cpp 
 
 using namespace std;
 
@@ -11,22 +13,27 @@ using namespace std;
 class LidDrivenCavityExp
 {
 public:
-    LidDrivenCavityExp();
+    LidDrivenCavityExp(); //Defualt constructors and destructors 
     ~LidDrivenCavityExp(); 
-    void SetDomainSize();
-    void SetGridSize();
-//    void SetPartitions(int px, int py); 
-//    void SetGlobalDomainSize();
     
-    //initialise and integrate perform solver calculations to determine streamfunction and vorticity values through time 
-    void SubDomainInfo(); 
-    void AssignGlobal(string* val);
-    void Initialise();
-    void Integrate();
-    void BoundaryVectors();
+     void SubDomainInfo(); //Use cblacs functions to determine local grid size, grid length and position of each subdomain on the global domain 
+    void AssignGlobal(string* val); //Assign values required and used by all processes 
+    void SetDomainSize(); //Function to assign Lxloc and Lyloc 
+    void SetGridSize(); //Function to assign no. of rows and columns in each subdomain 
+    int CheckParallel(); //Function to check any errors thrown by MPI. If error occurs, program terminates with an error message 
     
-    int CheckParallel(); 
-    void CommunicateBound(); //Function to communicate local edge values of stramfunction and voritcity for each subdomain 
+    
+   
+    void Initialise(); //Defines size of pointers and initializes other variables to be used by other member functions 
+    void Integrate(); //Used to determine how streamfunction and vorticity change over time, and obtain final values 
+    //void BoundaryVectors();
+    void BoundaryVectorsGen(double* arr, double* arr_left, double* arr_right, double* arr_bot, double* arr_top); //Function assigns 
+    
+   
+    void CommunicateStreamBound(); //Function to communicate local edge values of stramfunction and voritcity for each subdomain 
+    void CommunicateVortBound();
+    void Communicate(double* arr_top,double* buf_top, double*arr_bot, double* buf_bot, double* arr_left, double* buf_left, double* arr_right, double* buf_right); 
+    void OutputValues(); 
     
     
     //Functions which should belong to Poisson Solver class 
@@ -42,18 +49,24 @@ public:
     
     int* GetIndex();
     
+    //void UpdateTemps(int* ind);
+    
     void InnerVorticity(int* ind, int size1, int size2); 
     
     //Calculates inner voritcity at next timestep 
     void NextInnerVorticity(int* ind, int size1,int size2); 
     
-    void CopyVorticity(double*arr1,double* arr2, int var); 
+    //void CopyVorticity(double*arr1,double* arr2, int var); 
     
     //Obtains inner voriticyt values for calculation of streamfunction at th enext time step 
-    void RecoverInnerVorticity(double*v, double*v1, int Nx, int Ny); 
+   // void RecoverInnerVorticity(double*v, double*v1, int Nx, int Ny); 
     
     //Updates streamfunction values for the next time step 
     void UpdateInnerStream(double*s, double*s1, int Nx, int Ny); 
+    
+    void UpdateVorticity(int* ind,int size1,int size2); 
+    
+    double* Jacobi(double* s,double*v,int* ind,int size1, int size2, int Nyloc, int Nxloc); 
     
     
     
@@ -88,9 +101,7 @@ private:
     double Re;
     int    Nx;
     int    Ny;
-//    int    nx; 
-//    int    ny; 
-//    int    var; 
+
     int Px; //Partition number chosen by user 
     int Py; 
     
@@ -120,8 +131,7 @@ private:
     double* s_bot=nullptr;
     double* y_bot=nullptr; //Dummy for storing values during communication 
     double* x_bot=nullptr;
-//    int nxloc; 
-//    int nyloc; 
+
     //Subdomain array size and length definition 
     
      int rank, nprocs, retval_rank, retval_size;

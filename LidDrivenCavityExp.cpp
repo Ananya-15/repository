@@ -21,9 +21,9 @@ using namespace std;
   void Cblacs_get(int, int, int*);
   void Cblacs_gridinit(int*, char const*, int, int);
   void Cblacs_gridinfo(int, int*, int*, int*, int*);
-  void Cblacs_barrier(int , char*);
-  void Cblacs_gridexit(int);
-  void Cblacs_exit(int);
+//  void Cblacs_barrier(int , char*);
+//  void Cblacs_gridexit(int);
+//  void Cblacs_exit(int);
   
   int numroc_(int const& n, int const& nb, int const& iproc, int const& isproc, int const& nprocs);
 }
@@ -34,8 +34,7 @@ LidDrivenCavityExp::LidDrivenCavityExp()=default; //Constructor
 
 LidDrivenCavityExp::~LidDrivenCavityExp()=default;  //Destructor 
 
-int LidDrivenCavityExp::CheckParallel(){
-     //Check if parallelisation successful 
+int LidDrivenCavityExp::CheckParallel() { //Check if parallelisation successful 
      
      retval_rank = MPI_Comm_rank(MPI_COMM_WORLD, &rank); // zero-based //Initial rank is defined as zero 
      retval_size = MPI_Comm_size(MPI_COMM_WORLD, &nprocs); //Obtain rank and process number 
@@ -44,11 +43,11 @@ int LidDrivenCavityExp::CheckParallel(){
      return 1;
      }  
      else {
-         return 0;
+     return 0;
      }
 }
 
-void LidDrivenCavityExp::AssignGlobal(string *val){
+void LidDrivenCavityExp::AssignGlobal(string *val){ //Assign global values based on user input info 
 
               Lx=stod(val[0]); 
               Ly=stod(val[1]); 
@@ -63,23 +62,16 @@ void LidDrivenCavityExp::AssignGlobal(string *val){
 
 void LidDrivenCavityExp::SubDomainInfo(){
      
-     row_loc=Py; //No. local rows and columns expected due to partitioning in process 
+     row_loc=Py; //No. subdomain rows and columns expected due to partitioning in process 
      col_loc=Px; 
      
      Cblacs_pinfo(&rank,&nprocs); 
-     assert(nprocs>=row_loc*col_loc); //Assertion statement to validate user input np for chosen array size nx and ny 
+     assert(nprocs>=row_loc*col_loc); //Assertion statement to validate user input np for chosen partition size px and py 
      
      Cblacs_get(0,0,&ctxt); //Attains system context 
      Cblacs_gridinit(&ctxt,"Col-major",row_loc,col_loc); //Creates process grid for a given context 
      
-     Cblacs_gridinfo(ctxt,&row_loc,&col_loc,&myrow,&mycol);
-//     
-//     cout << "Myrow is: " << myrow << endl; 
-//     cout << "Mycol is: " << mycol << endl; 
-//     cout << "Mstrix rank is: "<<rank << endl; 
-//     cout << endl; 
-//     
-    
+     Cblacs_gridinfo(ctxt,&row_loc,&col_loc,&myrow,&mycol); 
 }
 
 
@@ -91,26 +83,21 @@ void LidDrivenCavityExp::SetDomainSize()
 
 
 
-void LidDrivenCavityExp::SetGridSize() //Solution created assuming Ny rows and Nx columns 
+void LidDrivenCavityExp::SetGridSize() //Determine no. of rows and columns of each subdomain based on its position on the global grid using numroc 
 {
       Nyloc=numroc_(Ny,1,myrow,0,row_loc);
       Nxloc=numroc_(Nx,1,mycol,0,col_loc); 
-      
-//     cout << "Local row length: " << Nyloc << endl; //Verify parallelisation split by checking local subdomain size 
-//     cout << "Local Column length: " << Nxloc << endl;  
      
 }
 
 
-void LidDrivenCavityExp::Initialise() //Use initialise to initialise all pointer values 
+void LidDrivenCavityExp::Initialise() //Initialise class variables 
 {    
       
       v=new double[Nxloc*Nyloc]; //Initialize vorticity values 
       vnew=new double[Nxloc*Nyloc];//Voriticity at new timestep value 
       s=new double[Nxloc*Nyloc]; //Initialize streamfunction value 
-//      v1=new double[var]; //Initialize inner vorticity and streamfunction values 
-//      s1=new double[var]; 
-//      
+
       v_left=new double[Nyloc]; 
       s_left=new double[Nyloc];
       y_left=new double[Nyloc]; //Column vector storing streamfunction values sent from left column of adjacent subdomain at boundary
@@ -123,68 +110,60 @@ void LidDrivenCavityExp::Initialise() //Use initialise to initialise all pointer
       
       v_top=new double[Nxloc]; 
       s_top=new double[Nxloc]; 
-      y_top=new double[Nxloc]; //Row vector storing streamfunction values sent from top row of adjacent subdomain at boundary
-      x_top=new double[Nxloc]; //Row vector storing vorticity values sent from top row of adjacent subdomain at boundary
+      y_top=new double[Nxloc]; //Row vector storing streamfunction values sent from bottom row (storing top wall conditions) of the subdomain above at the boundary
+      x_top=new double[Nxloc]; //Row vector storing vorticity values sent from bottom row of subdomain right above. 
       
       v_bot=new double[Nxloc]; 
       s_bot=new double[Nxloc]; 
-      y_bot=new double[Nxloc]; //Row vector storing streamfunction values sent from top row of adjacent subdomain at boundary
-      x_bot=new double[Nxloc]; //Row vector storing vorticity values sent from bottom row of adjacent subdomain at boundary
+      y_bot=new double[Nxloc]; //Row vector storing streamfunction values sent from top row (storing bottom wall conditions) of subdomain right below. 
+      x_bot=new double[Nxloc]; //Row vector storing vorticity values sent from top row of adjacent subdomain right below. 
  
  
       for (int i=0;i<Nxloc*Nyloc;i++){
               v[i]=0; 
               s[i]=0; 
-              vnew[i]=0; 
-      }
-//      for (int i=0;i<Nxloc;i++){
-//          for (int j=0;j<Nyloc;j++){
-//              s[i*Nxloc+j]=
-//          }
-//      }
+              vnew[i]=0; //Initialise all values to be zero 
+       }
+
       
-//      cout << "Initialised voriticity for rank " << rank << " is: " << endl << endl; 
-//      printmat(Nyloc,Nxloc,v); 
-//      cout << endl << endl; 
-      
-        dx=Lx/(Nx-1.0); //Determine other global variables used across several class member functions 
+        dx=Lx/(Nx-1.0); //Set global variables dx, dy and U
         dy=Lx/(Ny-1.0); 
         U=1.0;
         
-        if (dt>=Re*dx*dy/4){
+        if (dt>=Re*dx*dy/4){ //Ensure timestep value satosfoes restriction
            throw logic_error("Chosen value of dt too large"); 
-//     
-       }
+    
+        }
       
 }
 
-void LidDrivenCavityExp::BoundaryVectors(){ //Inputs local array arr and arr dimensions //Rewrites left, right, top and bottom vorticity and streamfunction boundary values 
-//For each subdomain 
-   for (int i=0;i<Nyloc;i++){
-    v_left[i]=v[i];
-    s_left[i]=s[i]; 
-   }
-    
-    for (int i=0;i<Nyloc;i++){
-    v_right[i]=v[Nyloc*(Nxloc-1)]; 
-    s_right[i]=s[Nyloc*(Nxloc-1)];
-    }
-    
-    for (int i=0;i<Nxloc;i++){
-    v_bot[i]=v[i*Nyloc];
-    s_bot[i]=s[i*Nyloc];
-    }
-    
-    for (int i=0;i<Nxloc;i++){
-    v_top[i]=v[(i+1)*(Nyloc-1)]; 
-    s_top[i]=s[(i+1)*(Nyloc-1)]; 
-    }
-
-//    if (rank==1){  //Check value by printing 
-//        cout << "Vright for this subdomain is: " << endl; 
-//        printmat(Nyloc,1,v_right); 
-//        }
-}
+//void LidDrivenCavityExp::BoundaryVectors(){ //Inputs local array arr and arr dimensions //Rewrites left, right, top and bottom vorticity and streamfunction boundary values 
+////For each subdomain 
+//   for (int i=0;i<Nyloc;i++){
+//    v_left[i]=v[i];
+//    s_left[i]=s[i]; 
+//   }
+//    
+//    for (int i=0;i<Nyloc;i++){
+//    v_right[i]=v[Nyloc*(Nxloc-1)]; 
+//    s_right[i]=s[Nyloc*(Nxloc-1)];
+//    }
+//    
+//    for (int i=0;i<Nxloc;i++){
+//    v_bot[i]=v[i*Nyloc];
+//    s_bot[i]=s[i*Nyloc];
+//    }
+//    
+//    for (int i=0;i<Nxloc;i++){
+//    v_top[i]=v[(i+1)*(Nyloc-1)]; 
+//    s_top[i]=s[(i+1)*(Nyloc-1)]; 
+//    }
+//
+////    if (rank==1){  //Check value by printing 
+////        cout << "Vright for this subdomain is: " << endl; 
+////        printmat(Nyloc,1,v_right); 
+////        }
+//}
 
 void LidDrivenCavityExp::BoundaryVectorsGen(double* arr, double* arr_left, double* arr_right, double* arr_bot, double* arr_top){
  
@@ -784,7 +763,7 @@ void LidDrivenCavityExp::Integrate()
 //  double* vtemp2=new double[size1*size2];  
 //  double* vtemp3=new double[size1*size2];  
   
-  //  while (t<T){
+   while (t<T){
              if (rank==4){
             cout << "Time step is: " << t << endl << endl; 
             
@@ -806,83 +785,18 @@ void LidDrivenCavityExp::Integrate()
              
              s=LidDrivenCavityExp::Jacobi(v,s,ind,size1,size2,Nyloc,Nxloc); 
              
-             if (rank==0){
-                 cout << "Streamfunction for this timestep" << endl; 
-                 printmat(Nyloc,Nxloc,s); 
-             }
-             
+//             if (rank==0){
+//                 cout << "Streamfunction for this timestep" << endl; 
+//                 printmat(Nyloc,Nxloc,s); 
+//             }
+//             
              t+=dt;
              
-             if (rank==0){
-                 cout << "Vorticity is: " << endl; 
-                 printmat(Nyloc,Nxloc,v); 
+//             if (rank==0){
+//                 cout << "Vorticity is: " << endl; 
+//                 printmat(Nyloc,Nxloc,v); 
              }
              
-             LidDrivenCavityExp::OutputValues();
-          
-             
-          
-    //}
+    }
     
-}
-//             if (rank==3){
-//             cout << "Returned streamfunction value is" << endl; 
-//             printmat(Nyloc,Nxloc,s); 
-//             
-//             }
-            
-//             
-//             
-//            
-//            cout << "Updated vorticity boundar conditions: " << endl; 
-//            cout << endl << endl; 
-//            printmat(Ny,Nx,v); 
-//            
-//            
-//             LidDrivenCavity::InnerVorticity(v,s,Nx,Ny,dx,dy); //Inner vorticity values at current timestep 
-//             
-//             LidDrivenCavity::CopyVorticity(v,vnew,Nx*Ny); 
-//            cout << "Inner voritcity values at current timestep" << endl;    
-//            cout << endl << endl; 
-//            printmat(Ny,Nx,v);            
-//  
-//            LidDrivenCavity::NextInnerVorticity(v,s,Nx,Ny,dx,dy,dt,Re);  //Inner vorticity values at next timestep, updates vnew
-//        
-//            
-//            cout << "Updated vorticity at new timestep: " << endl; 
-//            printmat(Ny,Nx,vnew); 
-//            cout << endl << endl; 
-//            
-//            LidDrivenCavity::RecoverInnerVorticity(vnew,v1,Nx,Ny); //Extract to obain inner voriticity values and save in matrix v1 
-//            
-//            LidDrivenCavity::CopyVorticity(vnew,v,Nx*Ny); //Update vorticity so that v=vnew 
-//            
-//            A=psolver->MatrixPoisson(); //Call function to obtain matrix A
-//               
-//            cout << "Works here 1" << endl;
-//            
-//            cout << "Updated vorticity at new timestep: " << endl; 
-//            printmat(Ny,Nx,v); 
-//            cout << endl << endl; 
-//            
-//             s1=psolver->matrixSolve(A,var,v,s1); //Time to implement lapack 
-//            
-//            //s1=LidDrivenCavity::SolveMatrix(A,v1,s1,var); 
-//              cout << "Works here 2" << endl; 
-//               
-//            LidDrivenCavity::UpdateInnerStream(s,s1,Nx,Ny);  //Need to input s1 back in streamfunction 
-//
-//              cout << "Works here 3" << endl; 
-//          t+=dt; 
-//      }
-//    cout << "Final streamfunction values: " << endl; 
-//    printmat(Nx,Ny,v); //Check if final values make sense 
-//
-//  //delete [] A; 
-//  delete [] v1; 
-//  delete [] s1; 
-//  delete [] v; 
-//  delete [] s; 
-//     
 
-//      

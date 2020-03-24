@@ -274,7 +274,14 @@ void LidDrivenCavity::Integrate()
            // cout << "Works here 1" << endl;
             
              //s1=
-             LidDrivenCavity::SolveMatrix(A,v1,s1,var,Nx,Ny,ipiv);  //Time to implement lapack 
+             void LidDrivenCavity::Jacobi(); 
+             
+             for (int i=1; i<Nx-1; i++){
+                 for (int j=1;j<Ny-1;j++){
+                     
+                 }
+             }
+            // LidDrivenCavity::SolveMatrix(A,v1,s1,var,Nx,Ny,ipiv);  //Time to implement lapack 
             
             //s1=LidDrivenCavity::SolveMatrix(A,v1,s1,var); 
              // cout << "Works here 2" << endl; 
@@ -283,9 +290,9 @@ void LidDrivenCavity::Integrate()
 
              // cout << "Works here 3" << endl; 
              
-//             cout << "Stream function values at next timestep: " << endl ; 
-//             printmat(Ny,Nx,s); 
-//             cout << endl << endl; 
+             cout << "Stream function values at next timestep: " << endl ; 
+             printmat(Ny,Nx,s); 
+             cout << endl << endl; 
          t+=dt; 
       }
 //    cout << "Final streamfunction values: " << endl; 

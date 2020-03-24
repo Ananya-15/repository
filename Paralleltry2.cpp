@@ -1,6 +1,4 @@
 #include <iostream>
-//#include <math.h>
-//#include "PrintMat.h"
 #include <cblas.h>
 #include <mpi.h> 
 //#include "PoissonSolver.h"
@@ -10,7 +8,7 @@
 using namespace std; 
 
 extern "C" {
-  void Cblacs_pinfo(int*, int*);
+  void Cblacs_pinfo(int*, int*); //Definition of functions required to split up domains based on user inputs 
   void Cblacs_get(int, int, int*);
   void Cblacs_gridinit(int*, char const*, int, int);
   void Cblacs_gridinfo(int, int*, int*, int*, int*);
@@ -25,67 +23,34 @@ extern "C" {
 
 int main(int argc, char **argv)
 {   
-    MPI_Init(&argc, &argv);
-    
-    int n=argc/2; 
-    string *val=new string [n];
-     for (int i=0;i<n;i++){
+        MPI_Init(&argc, &argv);
+        
+        int n=argc/2; 
+        string *val=new string [n];
+        
+             for (int i=0;i<n;i++){   //Take user input, create array val with only the numeric values 
                     val[i]=argv[2*(i+1)]; 
-     }        
-    
-//     int rank, nprocs, retval_rank, retval_size; //Check if parallelisation successful 
-//     
-//     retval_rank = MPI_Comm_rank(MPI_COMM_WORLD, &rank); // zero-based //Initial rank is defined as zero 
-//     retval_size = MPI_Comm_size(MPI_COMM_WORLD, &nprocs); //Obtain rank and process number 
-//     if (retval_rank == MPI_ERR_COMM || retval_size == MPI_ERR_COMM) {
-//     std::cout << "Invalid communicator" << std::endl;
-//     return 1;
-//     }    
-//    
-     LidDrivenCavityExp* solver = new LidDrivenCavityExp(); //Instantiate 
-     
-     
-     
-     solver->AssignGlobal(val); //Assign variables such as Re, Nx, Ny, etc. 
-     
-     
-     
-     solver->SubDomainInfo(); //returns process grid coordinates 
-//     
-     solver->SetDomainSize(); //Determine Lx and Ly of subdomain 
-//     
-     solver->SetGridSize(); //Set local grid size Nx and Ny 
-//     
-     solver->Initialise(); //Define array size of voriticity and streamfunction variables 
-//     
-//     cout << "After boundary condition imposition" << endl;
-//     
-     solver->Integrate(); 
-     
-     
-
-     
-     
-     
-    
-//     if (myrow>=0){ //myrow and mycol are local coordinates for processes 
-//         cout << "Rank " << rank << " has coordinates " << myrow << ", " << mycol << endl << endl; 
-//     }
-     
-      //Instantiate new class within each process 
-      
-     
-     
-     
-     
-     
-    
-     
-     
-     
-//     
-//     solver-> 
-          
-     
-     MPI_Finalize(); 
+             }        
+            
+         LidDrivenCavityExp* solver = new LidDrivenCavityExp(); //Instantiate 
+         
+         
+         
+         solver->AssignGlobal(val); //Assign variables such as Re, Nx, Ny, etc. which will be common to all subdomains 
+         
+         
+         solver->SubDomainInfo(); //returns process grid coordinates 
+    //     
+         solver->SetDomainSize(); //Determine Lx and Ly of subdomain (Lxloc and Lyloc)
+    //     
+         solver->SetGridSize(); //Set local grid size for each subdomain (Defined as Nxloc and Nyloc)
+    //     
+         solver->Initialise(); //Define array size of vorticity and streamfunction variables 
+    //     
+         solver->Integrate(); //Determines streamfunction and vorticity values at the final timestep 
+         
+         solver->OutputValues(); //Gather values from all processes, print out to data file to be used for matlab plots 
+              
+         
+         MPI_Finalize(); //Close parallelisation process 
 }
