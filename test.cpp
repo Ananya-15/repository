@@ -75,8 +75,8 @@ LidDrivenCavity::~LidDrivenCavity() //Destructor
         }
                    
         
-         printmat(rows,var,A);
-         cout << endl << endl; 
+//         printmat(rows,var,A);
+//         cout << endl << endl; 
          int info; 
       
          //cout << "After factorisation: " << endl; 
@@ -166,7 +166,7 @@ LidDrivenCavity::~LidDrivenCavity() //Destructor
 
  void LidDrivenCavity::BoundaryConditions(int Nx, int Ny, double* v, double dx, double dy, double dt, double U){//){
       for (int i=0;i<Nx;i++){
-                v[(i+1)*(Ny-1)+i]=(2/pow(dy,2))*(s[(i+1)*(Ny-1)]-s[(i+1)*(Ny-1)-1])-(2*U/dy); //Top
+                v[(i+1)*(Ny-1)+i]=(2/pow(dy,2))*(s[(i+1)*(Ny-1)+i]-s[(i+1)*(Ny-1)+i-1])-(2*U/dy); //Top
                  v[i*Ny]=(2/pow(dy,2))*(s[i*Ny]-s[i*Ny+1]); //Bottom 
             }
        for (int i=0;i<Ny;i++){
@@ -219,6 +219,30 @@ void LidDrivenCavity::UpdateInnerStream(double*s, double*s1, int Nx, int Ny){
 
 }
 
+double* LidDrivenCavity::Jacobi(double*s, double*v, int Nx, int Ny){
+   // double alph=(pow(dx,2)*pow(dy,2))/(2*pow(dy,2)+2*pow(dx,2));
+   double alph=1/((2/pow(dy,2))+(2/pow(dx,2))); 
+    int count=1; 
+   // double* snew=new double[Nx*Ny]; 
+    
+    while (count<100){
+        for (int i=1;i<Nx-1;i++){
+            for (int j=1;j<Ny-1;j++){
+                double stemp=s[(i-1)*Ny+j]; 
+                double stemp1=s[(i+1)*Ny+j]; 
+                double stemp2=s[i*Ny+j-1];
+                double stemp3=s[i*Ny+j+1]; 
+                s[i*Ny+j]=s[i*Ny+j]+alph*(v[i*Ny+j]+((stemp1+stemp-2*s[i*Ny+j])/pow(dx,2))+((stemp3+stemp2-2*s[i*Ny+j])/pow(dy,2)));
+            }
+        }
+        count++; 
+    
+    }
+    
+    return s;
+
+}
+
 
 
 void LidDrivenCavity::Integrate()
@@ -235,14 +259,14 @@ void LidDrivenCavity::Integrate()
             
              LidDrivenCavity::BoundaryConditions(Nx,Ny,v,dx,dy,dt,U); //Update with BCs //
              
-          //   LidDrivenCavity::CopyVorticity(v,vnew,Nx*Ny); //Shouldn't be doing this, vnew shouldn't have these boundary conditions 
-            
+//          //   LidDrivenCavity::CopyVorticity(v,vnew,Nx*Ny); //Shouldn't be doing this, vnew shouldn't have these boundary conditions 
+//            
 //            cout << "Updated vorticity boundary conditions: " << endl; 
 //            cout << endl << endl; 
 //            printmat(Ny,Nx,v); 
-             LidDrivenCavity::InnerVorticity(v,s,Nx,Ny,dx,dy); //Inner vorticity values at current timestep 
-             
-            
+//             LidDrivenCavity::InnerVorticity(v,s,Nx,Ny,dx,dy); //Inner vorticity values at current timestep 
+//             
+//            
 //            cout << "Inner voritcity values at current timestep" << endl;    
 //            cout << endl << endl; 
 //            printmat(Ny,Nx,v);            
@@ -255,57 +279,101 @@ void LidDrivenCavity::Integrate()
                     v[(i)*Ny+j]=vnew[(i)*Ny+j]; 
                 }
                }
-
-//            cout << "Updated voriticty with Vnew" << endl; 
-//            cout << endl << endl; 
-//            cout << "Updated vorticity at new timestep: " << endl; 
-//            printmat(Ny,Nx,v); //Should have bcs from previous timestep 
-//            cout << endl << endl; 
-//            
-            
-           // LidDrivenCavity::CopyVorticity(vnew,v,Nx*Ny); //Ensures v=vnew for the next timestep 
              
-            
-            
-            
-            LidDrivenCavity::RecoverInnerVorticity(v,v1,Nx,Ny); //Extract to obain inner voriticity values and save in matrix v1 
-            
+            s=LidDrivenCavity::Jacobi(s,v,Nx,Ny); 
                
-           // cout << "Works here 1" << endl;
-            
-             //s1=
-             void LidDrivenCavity::Jacobi(); 
              
-             for (int i=1; i<Nx-1; i++){
-                 for (int j=1;j<Ny-1;j++){
-                     
-                 }
-             }
-            // LidDrivenCavity::SolveMatrix(A,v1,s1,var,Nx,Ny,ipiv);  //Time to implement lapack 
-            
-            //s1=LidDrivenCavity::SolveMatrix(A,v1,s1,var); 
-             // cout << "Works here 2" << endl; 
-               
-            LidDrivenCavity::UpdateInnerStream(s,s1,Nx,Ny);  //Need to input s1 back in streamfunction 
-
-             // cout << "Works here 3" << endl; 
-             
-             cout << "Stream function values at next timestep: " << endl ; 
-             printmat(Ny,Nx,s); 
-             cout << endl << endl; 
+//             cout << "Stream function values at next timestep: " << endl ; 
+//             printmat(Ny,Nx,s); 
+//             cout << endl << endl; 
          t+=dt; 
       }
 //    cout << "Final streamfunction values: " << endl; 
 //    printmat(Ny,Nx,s); //Check if final values make sense 
+//    
+//    cout << "Final Vorticity values: " << endl; 
+//    printmat(Ny,Nx,v); 
    
-  ofstream vOut("StreamFunctionVal.txt",ios::out); 
+   if (Re=100){
+   ofstream vOut("StreamFunctionVal.txt",ios::out); 
    for (int i=0;i<Nx*Ny;i++){
     vOut.precision(5); //n is no. of significant figures 
     vOut << setw(7) << s[i] << endl; //Sets space between values 
    // vOut < setfill('.') << vairbale //Generally, leave empty!
    }
-
     vOut.close(); 
+    
+    
+    ofstream vOut1("VorticityVal.txt",ios::out); 
+   for (int i=0;i<Nx*Ny;i++){
+    vOut1.precision(5); //n is no. of significant figures 
+    vOut1 << setw(7) << v[i] << endl; //Sets space between values 
+   // vOut < setfill('.') << vairbale //Generally, leave empty!
+   }
+    vOut1.close(); 
+    
+   }
+   
+   if (Re=400){
+        ofstream vOut("StreamFunctionVal1.txt",ios::out); 
+   for (int i=0;i<Nx*Ny;i++){
+    vOut.precision(5); //n is no. of significant figures 
+    vOut << setw(7) << s[i] << endl; //Sets space between values 
+   // vOut < setfill('.') << vairbale //Generally, leave empty!
+   }
+    vOut.close(); 
+    
+    
+    ofstream vOut1("VorticityVal1.txt",ios::out); 
+   for (int i=0;i<Nx*Ny;i++){
+    vOut1.precision(5); //n is no. of significant figures 
+    vOut1 << setw(7) << v[i] << endl; //Sets space between values 
+   // vOut < setfill('.') << vairbale //Generally, leave empty!
+   }
+    vOut1.close(); 
+    
+       
+   }
+   
+   if (Re=1000){
+    ofstream vOut("StreamFunctionVal2.txt",ios::out); 
+   for (int i=0;i<Nx*Ny;i++){
+    vOut.precision(5); //n is no. of significant figures 
+    vOut << setw(7) << s[i] << endl; //Sets space between values 
+   // vOut < setfill('.') << vairbale //Generally, leave empty!
+   }
+    vOut.close(); 
+    
+    
+    ofstream vOut1("VorticityVal2.txt",ios::out); 
+   for (int i=0;i<Nx*Ny;i++){
+    vOut1.precision(5); //n is no. of significant figures 
+    vOut1 << setw(7) << v[i] << endl; //Sets space between values 
+   // vOut < setfill('.') << vairbale //Generally, leave empty!
+   }
+    vOut1.close(); 
+    
+    if (Re=3200){
+           ofstream vOut("StreamFunctionVal2.txt",ios::out); 
+   for (int i=0;i<Nx*Ny;i++){
+    vOut.precision(5); //n is no. of significant figures 
+    vOut << setw(7) << s[i] << endl; //Sets space between values 
+   // vOut < setfill('.') << vairbale //Generally, leave empty!
+   }
+    vOut.close(); 
+    
+    
+    ofstream vOut1("VorticityVal2.txt",ios::out); 
+   for (int i=0;i<Nx*Ny;i++){
+    vOut1.precision(5); //n is no. of significant figures 
+    vOut1 << setw(7) << v[i] << endl; //Sets space between values 
+   // vOut < setfill('.') << vairbale //Generally, leave empty!
+   }
+    vOut1.close(); 
+        
+    }
+       
+   }
 
   delete [] A; 
   delete [] v1; 

@@ -1,29 +1,21 @@
 #include "LidDrivenCavityExp.h"
-//#include "PoissonSolver.h"
+#include "PoissonSolverExp.h"
 #include <iostream>
 #include <math.h>
-#include "PrintMat.h"
+//#include "PrintMat.h"
 #include <cblas.h>
 #include <mpi.h> 
 #include <cassert>
+//#include "Communicate.h"
 
 
-using namespace std; 
- #define F77NAME(x) x##_ //Definition for using lapack solver 
- extern "C" {
- // LAPACK routine for solving systems of linear equations
- void F77NAME(dsysv)(const char& uplo, const int& n, const int& nrhs,const double * A, const int& lda,int *ipiv, double* B, 
- const int& ldb, double * work, const int& lwork, int& info);
- }
+using namespace std;
  
  extern "C" {
   void Cblacs_pinfo(int*, int*);
   void Cblacs_get(int, int, int*);
   void Cblacs_gridinit(int*, char const*, int, int);
   void Cblacs_gridinfo(int, int*, int*, int*, int*);
-//  void Cblacs_barrier(int , char*);
-//  void Cblacs_gridexit(int);
-//  void Cblacs_exit(int);
   
   int numroc_(int const& n, int const& nb, int const& iproc, int const& isproc, int const& nprocs);
 }
@@ -137,33 +129,6 @@ void LidDrivenCavityExp::Initialise() //Initialise class variables
       
 }
 
-//void LidDrivenCavityExp::BoundaryVectors(){ //Inputs local array arr and arr dimensions //Rewrites left, right, top and bottom vorticity and streamfunction boundary values 
-////For each subdomain 
-//   for (int i=0;i<Nyloc;i++){
-//    v_left[i]=v[i];
-//    s_left[i]=s[i]; 
-//   }
-//    
-//    for (int i=0;i<Nyloc;i++){
-//    v_right[i]=v[Nyloc*(Nxloc-1)]; 
-//    s_right[i]=s[Nyloc*(Nxloc-1)];
-//    }
-//    
-//    for (int i=0;i<Nxloc;i++){
-//    v_bot[i]=v[i*Nyloc];
-//    s_bot[i]=s[i*Nyloc];
-//    }
-//    
-//    for (int i=0;i<Nxloc;i++){
-//    v_top[i]=v[(i+1)*(Nyloc-1)]; 
-//    s_top[i]=s[(i+1)*(Nyloc-1)]; 
-//    }
-//
-////    if (rank==1){  //Check value by printing 
-////        cout << "Vright for this subdomain is: " << endl; 
-////        printmat(Nyloc,1,v_right); 
-////        }
-//}
 
 void LidDrivenCavityExp::BoundaryVectorsGen(double* arr, double* arr_left, double* arr_right, double* arr_bot, double* arr_top){
  
@@ -180,96 +145,7 @@ void LidDrivenCavityExp::BoundaryVectorsGen(double* arr, double* arr_left, doubl
     
 }
 
-void LidDrivenCavityExp::CommunicateStreamBound(){ //As boundary values at each subdomain are required for calculating vorticity at current and next timesteps, function
-//is created to communicate and store values between different subdomains
-//y_left stores s_left from adjacent subdomain 
-//x_left stores v_left from adjacent subdomain 
-//y_top stores s_bot from subdomain right below //bottom values are stored on top row 
-//y_bot stores s_top from subomain right above  //top values are stored on bottom row 
 
-  if (Px>1){
-    if (mycol<Px-1){
-
-        MPI_Send(s_right,Nyloc,MPI_DOUBLE,rank+Py,0,MPI_COMM_WORLD);
-       // cout << "Sends first" << endl; 
-        MPI_Recv(y_left,Nyloc,MPI_DOUBLE,rank+Py,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-        //printmat(Nyloc,1,y_right);
-        //printmat(Nyloc,1,x_right); 
-        //cout << "Receives second" << endl; 
-     }
-   if (mycol>0){
-           MPI_Recv(y_right,Nyloc,MPI_DOUBLE,rank-Py,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-           //printmat(Nyloc,1,s_right); 
-           MPI_Send(s_left,Nyloc,MPI_DOUBLE,rank-Py,1,MPI_COMM_WORLD); 
-                //   cout << "Sends second" << endl; 
-       }
- }
-//  
-  if (Py>1){
-   if (myrow<Py-1){
-       MPI_Send(s_top,Nxloc,MPI_DOUBLE,rank+1,0,MPI_COMM_WORLD); 
-       //cout << "Sends third" << endl; 
-//        cout << "Rank+1 is: " << rank+1 << endl; 
-       MPI_Recv(y_bot,Nxloc,MPI_DOUBLE,rank+1,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-            // cout << "Receives fourth" << endl; 
-    
-//      
-   }
-   if (myrow>0){
-       MPI_Recv(y_top,Nxloc,MPI_DOUBLE,rank-1,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-//          if (rank==0){
-//          cout << "Nxloc is: " << Nxloc << endl;
-//          cout <<"received y_top is: " << endl; 
-//          printmat(1,Nxloc,y_top); }
-      // cout << "Receives third" << endl; 
-       MPI_Send(s_bot,Nxloc,MPI_DOUBLE,rank-1,1,MPI_COMM_WORLD); 
-      // cout << "Sends Fourth" << endl;
-//       cout << rank-1<< endl; 
-     
-      }
-
-  }
-  
-  MPI_Barrier(MPI_COMM_WORLD); 
-  
-}
-  
-void LidDrivenCavityExp::CommunicateVortBound(){
-    if (Px>1){
-        if (mycol<Px-1){
-
- 
-            MPI_Send(v_right,Nyloc,MPI_DOUBLE,rank+Py,2,MPI_COMM_WORLD);
-            MPI_Recv(x_left,Nyloc,MPI_DOUBLE,rank+Py,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-
-         }
-       if (mycol>0){
-               MPI_Recv(x_right,Nyloc,MPI_DOUBLE,rank-Py,2,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-                  //     cout << "Receives first" << endl; 
-               //printmat(Nyloc,1,s_right); 
-               MPI_Send(v_left,Nyloc,MPI_DOUBLE,rank-Py,3,MPI_COMM_WORLD); 
-                    //   cout << "Sends second" << endl; 
-       }
-    }
-//  
-   if (Py>1){
-       if (myrow<Py-1){
-           MPI_Send(v_top,Nxloc,MPI_DOUBLE,rank+1,2,MPI_COMM_WORLD); 
-          MPI_Recv(x_bot,Nxloc,MPI_DOUBLE,rank+1,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-    
-       }
-       if (myrow>0){
-          MPI_Recv(x_top,Nxloc,MPI_DOUBLE,rank-1,2,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-           MPI_Send(v_bot,Nxloc,MPI_DOUBLE,rank-1,3,MPI_COMM_WORLD); 
-     
-      }
-
-  }
-  
-  MPI_Barrier(MPI_COMM_WORLD); 
-  
-
-}
 
 void LidDrivenCavityExp::Communicate(double* arr_top,double* buf_top, double*arr_bot, double* buf_bot, double* arr_left, double* buf_left, double* arr_right, double* buf_right){
     
@@ -281,10 +157,8 @@ void LidDrivenCavityExp::Communicate(double* arr_top,double* buf_top, double*arr
          }
        if (mycol>0){
                MPI_Recv(buf_right,Nyloc,MPI_DOUBLE,rank-Py,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
-                  //     cout << "Receives first" << endl; 
-               //printmat(Nyloc,1,s_right); 
                MPI_Send(arr_left,Nyloc,MPI_DOUBLE,rank-Py,1,MPI_COMM_WORLD); 
-                    //   cout << "Sends second" << endl; 
+               
        }
     }
 //  
@@ -310,7 +184,7 @@ void LidDrivenCavityExp::Communicate(double* arr_top,double* buf_top, double*arr
 
  void LidDrivenCavityExp::BoundaryConditions(){
       
-     //LidDrivenCavityExp::CommunicateStreamBound(); 
+     LidDrivenCavityExp::BoundaryVectorsGen(s,s_left,s_right,s_bot,s_top); 
      LidDrivenCavityExp::Communicate(s_top,y_top,s_bot,y_bot,s_left,y_left,s_right,y_right); 
       if (myrow==0) { //Bottom BC points 
          if (Nyloc==1){ //For the case when communication with another subdomain is necessary 
@@ -331,12 +205,12 @@ void LidDrivenCavityExp::Communicate(double* arr_top,double* buf_top, double*arr
        if (myrow==Py-1) { //Top BC points 
              if (Nyloc==1){ //Communication necessary
                         for (int i=0;i<Nxloc;i++){
-                            v[i]=(s[i]-y_top[i])*(2.0/pow(dy,2))-(2*U/dy); //y_bot stores s_top 
+                            v[i]=(s[i]-y_top[i])*(2.0/pow(dy,2))-(2*U/dy);  
                         }
             }
              else {
                   for (int i=0;i<Nxloc;i++){
-                            v[(i+1)*(Nyloc-1)+i]=(2/pow(dy,2))*(s[(i+1)*(Nyloc-1)]-s[(i+1)*(Nyloc-1)-1])-(2*U/dy); //Top
+                            v[(i+1)*(Nyloc-1)+i]=(2/pow(dy,2))*(s[(i+1)*(Nyloc-1)+i]-s[(i+1)*(Nyloc-1)+i-1])-(2*U/dy); //Top
                         }
                         
                   }
@@ -348,22 +222,21 @@ void LidDrivenCavityExp::Communicate(double* arr_top,double* buf_top, double*arr
                         v[i]=(s[i]-y_right[i])*(2.0/pow(dx,2)); //Stores s_left from adjacent array
                     }
                 }
-//                
+                
               else {
                    for (int i=0;i<Nyloc;i++){
                     v[i]=(2/(pow(dx,2)))*(s[i]-s[i+Nyloc]); 
                     }
               }
          }
-//////         
-////     
+
+     
       if  (mycol==Px-1){
              if (Nxloc==1){ //Communication necessary, call communicator class function
                      for (int i=0;i<Nyloc;i++){
                         v[i]=(s[i]-y_left[i])*(2.0/pow(dx,2)); 
                     }
-//                    cout << "v is: " << endl; 
-//                               printmat(Nxloc,1,v);
+
                 }
 
               else {
@@ -376,57 +249,57 @@ void LidDrivenCavityExp::Communicate(double* arr_top,double* buf_top, double*arr
  
  }
 
-int* LidDrivenCavityExp::GetIndex(){  //Returns an array of indices consisting of i,imax, etc. to be used for calculating inner vorticity values 
+int* LidDrivenCavityExp::GetIndex(){  //Returns an array of indices consisting of i,imax,j,jmax, etc. to be used for calculating inner vorticity values 
   int* ind = new int[4]; 
-         if (myrow==0 && mycol==0){
+         if (myrow==0 && mycol==0){ //Leftmost corner, bottom wall
              ind[0]=1; 
              ind[1]=Nxloc; 
              ind[2]=1; 
              ind[3]=Nyloc;
          }
-         else if (myrow==Py-1&&mycol==0){
+         else if (myrow==Py-1&&mycol==0){ //Leftmost corner, top wall 
              ind[0]=1; 
              ind[1]=Nxloc; 
              ind[2]=0; 
              ind[3]=Nyloc-1;
          }
-         else if (myrow==Py-1&&mycol==Px-1){
+         else if (myrow==Py-1&&mycol==Px-1){ //Rightmost corner, top wall 
              ind[0]=0; 
              ind[1]=Nxloc-1; 
              ind[2]=0; 
              ind[3]=Nyloc-1;
          }
-         else if (mycol==Px-1&&myrow==0){
+         else if (mycol==Px-1&&myrow==0){ //Rightmost corner, bottom wall 
              ind[0]=0; 
              ind[1]=Nxloc-1; 
              ind[2]=1; 
              ind[3]=Nyloc;
          }
-         else if (mycol==0) {
+         else if (mycol==0) { //General Left wall 
             ind[0]=1; 
              ind[1]=Nxloc; 
              ind[2]=0; 
              ind[3]=Nyloc; 
          }
-         else if (myrow==0){
+         else if (myrow==0){ //General bottom wall 
              ind[0]=0; 
              ind[1]=Nxloc; 
              ind[2]=1; 
              ind[3]=Nyloc;
          }
-         else if (myrow==Py-1){
+         else if (myrow==Py-1){ //General top wall 
              ind[0]=0; 
              ind[1]=Nxloc; 
              ind[2]=0; 
              ind[3]=Nyloc-1;
          }
-         else if (mycol==Px-1){
+         else if (mycol==Px-1){ //General Right wall 
              ind[0]=0; 
              ind[1]=Nxloc-1; 
              ind[2]=0; 
              ind[3]=Nyloc;
          }
-         else {
+         else {              //Interior subdomain points 
              ind[0]=0; 
              ind[1]=Nxloc; 
              ind[2]=0; 
@@ -434,6 +307,8 @@ int* LidDrivenCavityExp::GetIndex(){  //Returns an array of indices consisting o
              
          }
          return ind; 
+         
+         delete[] ind; 
 
 }
 
@@ -442,36 +317,18 @@ int* LidDrivenCavityExp::GetIndex(){  //Returns an array of indices consisting o
 
 
 void LidDrivenCavityExp::InnerVorticity(int* ind, int size1, int size2){
-//    int i, imax, j, jmax; 
-//    
+  
   int i, j; 
   int imax=ind[1];  
   int jmax=ind[3];  
     
     
-    double stemp, stemp1, stemp2, stemp3; 
+    double stemp, stemp1, stemp2, stemp3; //temp variables used for storage 
    
-    
-   
-//        cout << "size1 is: " << size1 << endl; 
-//        cout << "size2 is: " << size2 << endl; 
-//        cout << "Index matrix, storing i,imax,j and jmax: " << endl; 
-//        cout << i << " " << imax << " " << j << " " << jmax << endl << endl;   
-//        if (rank==0){
-//        cout << "Nxloc and Nyloc are: " << Nxloc << ", " << Nyloc << endl;
-//        cout << "i, imax, j and jmax are" << ind[0] << ", " << ind[1] << ", " << ind[2] << ", " << ind[3] << endl; 
-//        cout << "stored y_left is" << endl; 
-//                    printmat(1,Nxloc,y_left); 
-//        }
       for (i=ind[0];i<imax;i++){
-//        cout << "i works here" << endl; 
             for (j=ind[2];j<jmax;j++){
-//                if (rank==0){
-//                cout << "i and j are: " << i << ", " << j << endl; 
-//                }
-//                cout << "j works here" << endl; 
                 if (i==0){
-                    stemp=y_right[j]; 
+                    stemp=y_right[j]; //Conditional statements introduced to ensure communicated values are used at boundaries //Communication for s already conducted in BoundaryConditions
                 }
                 else{
                     stemp=s[(i-1)*Nyloc+j]; 
@@ -494,32 +351,20 @@ void LidDrivenCavityExp::InnerVorticity(int* ind, int size1, int size2){
                 else {
                     stemp3=s[i*Nyloc+j+1]; //After checking all the conditions, v is finally computed 
                 }
-//                if (rank==0){
-//                    cout << "stemp, stemp1, stemp 2 and stemp 3 are: " << stemp << ", " << stemp1 << ", " << stemp2 << ", " <<stemp3 << endl;
-//                    
-//                }
                 v[i*Nyloc+j]=-((stemp1-2*s[i*Nyloc+j]+stemp)/(pow(dx,2))+(stemp3-2*s[i*Nyloc+j]+stemp2)/(pow(dy,2))); 
-                  //  cout << "v is: " <<  v[i*size2+j] << endl; 
                     
                     
                 }
         }
-//    
-//    if (rank==5){
-//        cout << "Inner vorticity matrix is: " << endl; 
-//        printmat(Nyloc,Nxloc,v); 
-////        cout << "Streamfunction is" << endl; 
-////        printmat(Nyloc,Nxloc,s); 
-//    }
+
  }
-// 
-//
-//
+
 void LidDrivenCavityExp::NextInnerVorticity(int* ind, int size1, int size2){
          
-     LidDrivenCavityExp::BoundaryVectorsGen(v,v_left,v_right,v_bot,v_top); //Boundary Vectors must be recalculated as some vorticity values were updated in previous iteration     
-     LidDrivenCavityExp::Communicate(v_top,x_top,v_bot,x_bot,v_left,x_left,v_right,x_right);  
-         
+     LidDrivenCavityExp::BoundaryVectorsGen(v,v_left,v_right,v_bot,v_top); //Ensure boundary conditions at timestep t are assigned to boundary vectors    
+     LidDrivenCavityExp::Communicate(v_top,x_top,v_bot,x_bot,v_left,x_left,v_right,x_right);  //Ensure boundary vectors are communicated to buffer arrays 
+    // Communicate(v_top,x_top,v_bot,x_bot,v_left,x_left,v_right,x_right, Px, Py, myrow, mycol);
+    
     int i, imax, j, jmax; 
     
 
@@ -529,7 +374,8 @@ void LidDrivenCavityExp::NextInnerVorticity(int* ind, int size1, int size2){
     
     double stemp, stemp1, stemp2, stemp3; 
     double vtemp,vtemp1,vtemp2,vtemp3; 
-    double temp1,temp2,temp3; 
+    double temp1,temp2,temp3;
+ 
     for (i=ind[0];i<imax;i++){
         for (j=ind[2];j<jmax;j++){
             if (i==0){
@@ -561,29 +407,19 @@ void LidDrivenCavityExp::NextInnerVorticity(int* ind, int size1, int size2){
                 vtemp3=x_bot[i]; 
             }
             else {
-                stemp3=s[i*Nyloc+j+1]; //After checking all the conditions, v is finally computed 
+                stemp3=s[i*Nyloc+j+1]; 
                 vtemp3=v[i*Nyloc+j+1];
             }
             temp1=(stemp3-stemp2)*(vtemp1-vtemp)/(4*dy*dx);
             temp2=(stemp1-stemp)*(vtemp3-vtemp2)/(4*dy*dx); 
             temp3=(1/Re)*((vtemp2-2*v[i*Nyloc+j]+vtemp3)/(pow(dy,2))+(vtemp-2*v[i*Nyloc+j]+vtemp1)/(pow(dx,2))); 
             vnew[i*Nyloc+j]=v[i*Nyloc+j]+dt*(temp2-temp1+temp3); 
-//            if (rank==4){
-//                cout << "temp3 is: " << vtemp3 <<  endl; 
-//            }
             
         }
     }
-//    if (rank==4){
-////        cout << "Temp1 is: " << temp1 << endl; 
-////        cout << "Temp2 is: " << << endl; 
-////        cout << "Temp3 is: " << endl;
-//        cout << "Next timestep Inner vorticity matrix is: " << endl; 
-//        printmat(Nyloc,Nxloc,vnew); 
-//    }
  }
  
- void LidDrivenCavityExp::UpdateVorticity(int* ind,int size1,int size2){
+ void LidDrivenCavityExp::UpdateVorticity(int* ind,int size1,int size2){ //Ensures interior vorticity values are updated so that v=vnew for next timestep 
      
      for (int i=ind[0];i<ind[1];i++){
         for (int j=ind[2];j<ind[3];j++){
@@ -592,17 +428,6 @@ void LidDrivenCavityExp::NextInnerVorticity(int* ind, int size1, int size2){
         }
      }
  }
-//     if (rank==5){
-//         cout << "v is: " << endl; 
-//         printmat(Nyloc,Nxloc,v); 
-//         cout << "vnew is: " << endl; 
-//         printmat(Nyloc,Nxloc,vnew); 
-//         
-//     }
-// }
-     
-
- 
 
 
 double* LidDrivenCavityExp::Jacobi(double*v, double* s, int* ind,int size1, int size2, int Nyloc, int Nxloc){
@@ -611,9 +436,9 @@ double* LidDrivenCavityExp::Jacobi(double*v, double* s, int* ind,int size1, int 
     double* diff=new double[Nyloc*Nxloc]; //To calculate difference between snew and snew1 
         for (int i=0;i<Nxloc*Nyloc;i++){
             snew[i]=s[i];  //Initialize before iterating, initial guessed value selected as zero at each timestep 
-            snew1[i]=s[i]; 
+            snew1[i]=0; 
         }
-    double err=1;  //dnrm of new solution 
+
     double stemp, stemp1, stemp2, stemp3; 
     double alph=(pow(dx,2)*pow(dy,2))/(2*pow(dy,2)+2*pow(dx,2));
     
@@ -629,47 +454,44 @@ double* LidDrivenCavityExp::Jacobi(double*v, double* s, int* ind,int size1, int 
     
     int count=1; 
     
-    // do {
+    double err; 
+
     while(count<100) {
-      LidDrivenCavityExp::BoundaryVectorsGen(snew,snew_left,snew_right,snew_bot,snew_top); //Will assign values to boundary vectors. snew changes with every iteration 
-      LidDrivenCavityExp::Communicate(snew_top,ynew_top,snew_bot,ynew_bot,snew_left,ynew_left,snew_right,ynew_right); //Communicate new values
-        for (int i=ind[0];i<ind[1];i++){
-            for (int j=ind[2];j<ind[3];j++){
-                if (i==0){
-                    stemp=ynew_right[j]; 
+          LidDrivenCavityExp::BoundaryVectorsGen(snew,snew_left,snew_right,snew_bot,snew_top); //Will assign values to boundary vectors. snew changes with every iteration 
+          LidDrivenCavityExp::Communicate(snew_top,ynew_top,snew_bot,ynew_bot,snew_left,ynew_left,snew_right,ynew_right); //Communicate new values
+            for (int i=ind[0];i<ind[1];i++){
+                for (int j=ind[2];j<ind[3];j++){
+                        if (i==0){
+                            stemp=ynew_right[j]; 
+                        }
+                        else{
+                            stemp=snew[(i-1)*Nyloc+j]; 
+                        }
+                        if (i==Nxloc-1){
+                            stemp1=ynew_left[j]; 
+                        }
+                        else {
+                            stemp1=snew[(i+1)*Nyloc+j];
+                        }
+                        if (j==0) {
+                            stemp2=ynew_top[i];
+                        }
+                        else {
+                            stemp2=snew[i*Nyloc+j-1];
+                        }
+                        if (j==Nyloc-1){
+                            stemp3=ynew_bot[i];
+                        }
+                        else {
+                            stemp3=snew[i*Nyloc+j+1]; //After checking all the conditions, v is finally computed 
+                        }
+                        snew1[i*Nyloc+j]=alph*(v[i*Nyloc+j]+((stemp1+stemp)/pow(dx,2))+((stemp3+stemp2)/pow(dy,2)));
                 }
-                else{
-                    stemp=snew[(i-1)*Nyloc+j]; 
-                }
-                if (i==Nxloc-1){
-                    stemp1=ynew_left[j]; 
-                }
-                else {
-                    stemp1=snew[(i+1)*Nyloc+j];
-                }
-                if (j==0) {
-                    stemp2=ynew_top[i];
-                }
-                else {
-                    stemp2=snew[i*Nyloc+j-1];
-                }
-                if (j==Nyloc-1){
-                    stemp3=ynew_bot[i];
-                }
-                else {
-                    stemp3=snew[i*Nyloc+j+1]; //After checking all the conditions, v is finally computed 
-                }
-                snew1[i*Nyloc+j]=alph*(v[i*Nyloc+j]+((stemp1+stemp)/pow(dx,2))+((stemp3+stemp2)/pow(dy,2)));
-//                if (rank==3){
-//                cout << "snew1 at this point is: " << snew1[i*Nyloc+j] << endl; 
-//                
-//                }
             }
-        }
 
         cblas_dcopy(Nxloc*Nyloc,snew1,1,diff,1); //Copy so that diff=snew1
         cblas_daxpy(Nxloc*Nyloc,-1,snew,1,diff,1); //diff=diff-snew or snew1-snew
-        err=cblas_dnrm2(Nxloc*Nyloc,diff,1); //Calculate norm error
+         err=cblas_dnrm2(Nxloc*Nyloc,diff,1); //Calculate norm error
         cblas_dcopy(Nxloc*Nyloc,snew1,1,snew,1); //Update so that snew=snew1 
 //        if (rank==5){
 //        cout << "snew1 is: " << endl; 
@@ -678,10 +500,7 @@ double* LidDrivenCavityExp::Jacobi(double*v, double* s, int* ind,int size1, int 
 //        }
         count++;
     }
-   // while (err>0.00001); 
-//    if (rank==3){
-//    cout << "Works hereeee" << endl;
-//    }
+
     
     return snew; 
     
@@ -689,113 +508,99 @@ double* LidDrivenCavityExp::Jacobi(double*v, double* s, int* ind,int size1, int 
     delete[] snew;
     delete[] snew1; 
     delete[] diff;  
- //   delete[] ynew; 
+    delete[] ynew_left;
+    delete[] ynew_right; 
+    delete[] ynew_top; 
+    delete[] ynew_bot; 
+    delete[] snew_left;
+    delete[] snew_right; 
+    delete[] snew_top; 
+    delete[] snew_bot; 
 }
 
 void LidDrivenCavityExp::OutputValues(){ //Also used for parallelisation 
 
-int var=Nxloc*Nyloc; 
-double* sglobal=nullptr; 
-int* temp=nullptr; 
-int* displs=nullptr; 
-// int* tempos=nullptr; 
+    int var=Nxloc*Nyloc; 
+    double* sglobal=nullptr; //recvbuf, global array storing values from all processes 
+    int* temp=nullptr; //temp array, used for storing subdomain array size for each process 
+    int* displs=nullptr; //array showing placement of recevied values with respect to sglobal in MPI_Gatherv
 
-// int displs[nprocs]; 
-// int tempos[nprocs]; 
-  if (rank==0){
-    sglobal=new double[Nx*Ny]; //Define receiving arrays 
-    temp=new int[nprocs]; 
-    displs=new int[nprocs]; 
-  }
+      if (rank==0){
+        sglobal=new double[Nx*Ny]; //Initialise array size, values will be gathered at root process 
+        temp=new int[nprocs]; 
+        displs=new int[nprocs]; 
+      }
 
 
-MPI_Gather(&var,1,MPI_INT,temp,1,MPI_INT,0,MPI_COMM_WORLD); //Need to ensure that process values are returned in order 
+    MPI_Gather(&var,1,MPI_INT,temp,1,MPI_INT,0,MPI_COMM_WORLD); //Obtain values for array temp 
 //
-if (rank==0){
-   // cout << "Array temp is: " << endl; 
-   //cout << "displs is: " << endl; 
-    displs[0]=0; 
-    for (int i=1;i<nprocs;i++){
-         // cout << temp[i] << endl; 
-        displs[i]=displs[i-1]+temp[i-1];  
-       // cout << displs[i] << endl; 
-    }
-  
-}
-
-MPI_Gatherv(s,var,MPI_DOUBLE,sglobal,temp,displs,MPI_DOUBLE,0,MPI_COMM_WORLD); 
-//    
     if (rank==0){
-        cout << "sglobal is: " << endl; 
-        printmat(Ny*Nx,1,sglobal);
+        displs[0]=0; 
+        for (int i=1;i<nprocs;i++){
+            displs[i]=displs[i-1]+temp[i-1];  
+        }
+      
     }
-}
+
+    MPI_Gatherv(s,var,MPI_DOUBLE,sglobal,temp,displs,MPI_DOUBLE,0,MPI_COMM_WORLD); //Used gatherv as subdomain size varies for each process 
+    //    
+        if (rank==0){
+            cout << "sglobal is: " << endl; 
+            printmat(Ny*Nx,1,sglobal);
+        }
+    }
 
 
 
 void LidDrivenCavityExp::Integrate()
 {    
-  //PoissonSolver* psolver=new PoissonSolver(); //Create new instance psolver of class Poisson Solver to implement solver calculations  
-
-  //psolver->Initialise(Nx,Ny,dx,dy); //Initialises values within PoissonSolver class 
-  double t=0; //First time step value  
+      PoissonSolverExp* psolver=new PoissonSolverExp(); //Create new instance psolver of class Poisson Solver to implement solver calculations  
+ 
+      psolver->Initialise(Nxloc,Nyloc,Px,Py,dx,dy,myrow,mycol,rank); 
+      
+      double* snew=new double[Nxloc*Nyloc];
+      double t=0; //First time step value  
+      
+      int* ind=new int[4]; //Required for using GetIndex()
+      
+      ind=LidDrivenCavityExp::GetIndex(); //Obtain indices for each process 
+      
+      int i=ind[0]; 
+      int imax=ind[1]; 
+      int j=ind[2]; 
+      int jmax=ind[3]; 
+      
+                  
+      int size1=imax-i; 
+      int size2=jmax-j;  
   
-  int* ind=new int[4]; //Required for using GetIndex()
-  
-  
-  ind=LidDrivenCavityExp::GetIndex(); 
-  
-  int i=ind[0]; 
-  int imax=ind[1]; 
-  int j=ind[2]; 
-  int jmax=ind[3]; 
-  
-              
-  int size1=imax-i; 
-  int size2=jmax-j; 
-//  double* stemp=new double[size1*size2]; //Initialise temp storage variables 
-//  double* stemp1=new double[size1*size2]; 
-//  double* stemp2=new double[size1*size2]; 
-//  double* stemp3=new double[size1*size2];
-//
-//  double* vtemp=new double[size1*size2]; 
-//  double* vtemp1=new double[size1*size2]; 
-//  double* vtemp2=new double[size1*size2];  
-//  double* vtemp3=new double[size1*size2];  
-  
-   while (t<T){
-             if (rank==4){
-            cout << "Time step is: " << t << endl << endl; 
-            
-             }
-             //LidDrivenCavityExp::BoundaryVectors(); //Obtain rows and columns located at the boundaries of subdomains 
-             
-             LidDrivenCavityExp::BoundaryVectorsGen(s,s_left,s_right,s_bot,s_top); 
-             
-             
-             //LidDrivenCavityExp::BoundaryVectorsGen(v,v_left,v_right,v_bot,v_top);
-            
-             LidDrivenCavityExp::BoundaryConditions(); //Update with BCs // Communicator function already defined within BCs 
-             
-             LidDrivenCavityExp::InnerVorticity(ind,size1,size2); 
-             
-             LidDrivenCavityExp::NextInnerVorticity(ind,size1,size2); //Communicator function already called 
-             
-             LidDrivenCavityExp::UpdateVorticity(ind,size1,size2); //Must be updated for the new timestep 
-             
-             s=LidDrivenCavityExp::Jacobi(v,s,ind,size1,size2,Nyloc,Nxloc); 
-             
-//             if (rank==0){
-//                 cout << "Streamfunction for this timestep" << endl; 
-//                 printmat(Nyloc,Nxloc,s); 
-//             }
-//             
-             t+=dt;
-             
-//             if (rank==0){
-//                 cout << "Vorticity is: " << endl; 
-//                 printmat(Nyloc,Nxloc,v); 
-             }
+       while (t<T){
+//                 if (rank==0){
+//                cout << "Time step is: " << t << endl << endl; 
+//                
+//                 }
+                 //LidDrivenCavityExp::BoundaryVectors(); //Obtain rows and columns located at the boundaries of subdomains 
+                 
+                // LidDrivenCavityExp::BoundaryVectorsGen(s,s_left,s_right,s_bot,s_top); 
+                
+                 LidDrivenCavityExp::BoundaryConditions(); //Update with BCs // Communicator function already defined within BCs 
+                 
+                 LidDrivenCavityExp::InnerVorticity(ind,size1,size2); 
+                 
+                 LidDrivenCavityExp::NextInnerVorticity(ind,size1,size2); //Communicator function already called 
+                 
+                 LidDrivenCavityExp::UpdateVorticity(ind,size1,size2); //Must be updated for the new timestep 
+                 
+                 for (int i=0;i<Nxloc*Nyloc;i++){
+                     snew[i]=s[i]; 
+                 }
+                 
+                 s=LidDrivenCavityExp::Jacobi(v,s,ind,size1,size2,Nyloc,Nxloc); //Determine new s 
+                 //s=psolver->Jacobi(ind,s,v,snew); //Results in a segmentation fault somewhere 
+                            
+                 t+=dt;
+                 
+           }
              
     }
     
